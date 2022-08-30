@@ -1,0 +1,110 @@
+Dump HID descriptors: 
+sudo usbhid-dump -m cafe
+
+Access bit N:
+Get: (INPUT >> N) & 1;
+Set: INPUT |= 1 << N;
+Unset: INPUT &= ~(1 << N);
+Toggle: INPUT ^= 1 << N;
+
+
+
+Write data to dev: 
+
+hidapitester --vidpid cafe/4004 --open --length 8 --send-output 3,0xff,0xf2,0x03 --close
+ 
+
+Setup procedure:
+ 
+ Install udev rules
+ Reload with: udevadm control --reload-rules
+
+Run Dependencies:
+https://github.com/trezor/cython-hidapi
+https://pypi.org/project/hidapi/
+libhidraw
+
+
+sudo apt-get install python-pip
+sudo apt-get install python-dev libusb-1.0-0-dev libudev-dev
+sudo pip install --upgrade setuptools
+sudo pip install hidapi==0.7.99.post21
+
+lcnc pi:
+sudo apt-get install python-pip python-dev libusb-1.0-0-dev libudev-dev 
+sudo pip install --upgrade setuptools
+sudo pip install hidapi==0.7.99.post21
+
+LCD Data:
+
+Byte 1 = Xpos [4], Ypos[4]
+
+
+
+Button Map (2 bytes) |  X | Y | Z | Rz | (2 bytes) | X Encoder Counts (4 bytes) | Y Encoder Counts (4 bytes) | Z Encoder Counts (4 bytes)
+
+[1, 0, 0, 128, 128, 128, 0, 0, 0, 255, 255, 255, 127, 255, 255, 255, 127, 255, 255, 255, 127]
+[1, 0, 0, 128, 128, 128, 0, 0, 0, 255, 255, 255, 127, 255, 255, 255, 127, 255, 255, 255, 127]
+[1, 0, 0, 128, 128, 128, 0, 0, 0, 255, 255, 255, 127, 255, 255, 255, 127, 255, 255, 255]
+
+
+
+
+
+
+
+#define REPORT_DESC_GAMEPAD(...)                            \
+    HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),                 \
+        HID_USAGE(HID_USAGE_DESKTOP_GAMEPAD),               \
+        HID_COLLECTION(HID_COLLECTION_APPLICATION),         \
+        __VA_ARGS__                                         \
+        HID_USAGE_PAGE(HID_USAGE_PAGE_BUTTON),              \
+        HID_USAGE_MIN(0),                                   \
+        HID_USAGE_MAX(32),                                  \
+        HID_LOGICAL_MIN(0),                                 \
+        HID_LOGICAL_MAX(1),                                 \
+        HID_REPORT_COUNT(32),                               \
+        HID_REPORT_SIZE(1),                                 \
+        HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),  \
+        HID_USAGE_PAGE(HID_USAGE_PAGE_DESKTOP),             \
+        HID_LOGICAL_MIN(0x00),                              \
+        HID_LOGICAL_MAX_N(0x00FF, 2),                       \
+        HID_USAGE(HID_USAGE_DESKTOP_X),                     \
+        HID_USAGE(HID_USAGE_DESKTOP_Y),                     \
+        HID_USAGE(HID_USAGE_DESKTOP_Z),                     \
+        HID_USAGE(HID_USAGE_DESKTOP_RZ),                    \
+        HID_REPORT_COUNT(4),                                \
+        HID_REPORT_SIZE(8),                                 \
+        HID_INPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE),  \
+        HID_USAGE_PAGE(HID_USAGE_PAGE_DIGITIZER),           \
+        HID_USAGE(0x01),                                    \
+        HID_LOGICAL_MIN(0x0),                               \
+        HID_LOGICAL_MAX_N(0x00FF, 2),                       \
+        HID_REPORT_COUNT(12),                               \
+        HID_REPORT_SIZE(8),                                 \
+        HID_OUTPUT(HID_DATA | HID_VARIABLE | HID_ABSOLUTE), \
+        HID_COLLECTION_END
+
+
+struct report
+{
+    uint32_t buttons;
+    uint8_t joy0;
+    uint8_t joy1;
+    uint8_t joy2;
+    uint8_t joy3;
+    int x_encoder_counts;
+    int y_encoder_counts;
+    int z_encoder_counts;
+} report;
+
+
+
+Display stuff:
+
+Common items to multiple screen states (Jog, Idle, Cycle, Hold, Tool Change):
+RPM
+X/Y/Z pos
+WCS
+
+state on display may be current or previous. If hold, previous, else current. 
