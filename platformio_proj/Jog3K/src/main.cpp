@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "i2c_jogger.h"
 
 void readInputs (void);
 void readCommands (void);
@@ -506,6 +507,8 @@ void setup() {
   initDLED();
 #endif
 
+init_multimedia();
+
 #ifdef KEYPAD
 for(int col = 0; col < numCols; col++) {
   for (int row = 0; row < numRows; row++) {
@@ -514,6 +517,7 @@ for(int col = 0; col < numCols; col++) {
 }
 #endif
 
+#ifdef QUADENC
 if(QuadEncs>=1){
   #if QUADENCS >= 1
     Encoder0.begin();
@@ -534,6 +538,8 @@ if(QuadEncs>=4){
     Encoder3.begin();
   #endif
 }
+#endif
+
 
 
 //Setup Serial
@@ -621,7 +627,7 @@ void readJoySticks() {
 }
 #endif
 
-#ifdef QUADENC || PIOQUADENC
+#ifdef QUADENC
 void readEncoders(){
     if(QuadEncs>=1){
       #if QUADENCS >= 1
