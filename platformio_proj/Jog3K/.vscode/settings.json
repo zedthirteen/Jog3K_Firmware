@@ -7,6 +7,9 @@
         "unordered_map": "cpp",
         "vector": "cpp",
         "string_view": "cpp",
-        "initializer_list": "cpp"
+        "initializer_list": "cpp",
+        "jog3k_config_ssd1351_notouch.h": "c",
+        "*.tcc": "cpp",
+        "random": "cpp"
     }
 }
