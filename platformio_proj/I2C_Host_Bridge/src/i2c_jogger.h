@@ -1,7 +1,20 @@
 #ifndef __I2C_JOGGER_H__
 #define __I2C_JOGGER_H__
 
+#include <stdint.h>
+
 #define PROTOCOL_VERSION 1
+
+#if JOG_MODULE == 1
+//led locations
+#define REDLED 21
+#define GREENLED 27
+#else
+#define REDLED 21
+#define GREENLED 22
+#endif
+
+#define ONBOARD_LED REDLED
 
 // Which pin on the Arduino is connected to the NeoPixels?
 #define PIN        21 // On Trinket or Gemma, suggest changing this to 1
@@ -251,23 +264,26 @@ typedef struct Pendant_memory_map {
 
 extern Pendant_memory_map * pendant_memory_ptr;
 
-extern ScreenMode screenmode;
 extern Machine_status_packet prev_packet;
-extern Jogmode previous_jogmode;
-extern Jogmodify previous_jogmodify;
-extern ScreenMode previous_screenmode;
 
 extern bool screenflip;
 extern int command_error;
 extern float step_calc;
 
-//extern Adafruit_NeoPixel pixels;
+typedef struct
+{
+    uint8_t mem[256];
+    uint8_t mem_address;
+    bool mem_address_written;
+} Memory_context;
 
+extern Memory_context context;
+extern uint8_t key_character;
 
-void draw_string(char * str);
-void draw_main_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet, bool force);
-void update_neopixels(Machine_status_packet *previous_packet, Machine_status_packet *packet);
-void init_multimedia (void);
+void init_i2c_responder (void);
+void kpstr_clear (void);
+uint8_t keypad_sendchar (uint8_t character, bool clearpin);
+
 void write_nvs (void);
 
 #if defined(_LINUX_) && defined(__cplusplus)
