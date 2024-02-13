@@ -87,6 +87,49 @@ typedef struct {
 dev_info_t dev_info[CFG_TUH_DEVICE_MAX] = { 0 };
 
 Adafruit_USBH_Host USBHost;
+Adafruit_USBH_CDC SerialHost;
+
+//--------------------------------------------------------------------+
+// TinyUSB Host callbacks
+//--------------------------------------------------------------------+
+extern "C" {
+
+// Invoked when a device with CDC interface is mounted
+// idx is index of cdc interface in the internal pool.
+void tuh_cdc_mount_cb(uint8_t idx) {
+  // bind SerialHost object to this interface index
+  SerialHost.mount(idx);
+  Serial1.println("SerialHost is connected to a new CDC device");
+}
+
+// Invoked when a device with CDC interface is unmounted
+void tuh_cdc_umount_cb(uint8_t idx) {
+  SerialHost.umount(idx);
+  Serial1.println("SerialHost is disconnected");
+}
+
+}
+
+// forward Seral <-> SerialHost
+void forward_serial(void) {
+  uint8_t buf[64];
+
+  // Serial -> SerialHost
+  if (Serial.available()) {
+    size_t count = Serial.read(buf, sizeof(buf));
+    if (SerialHost && SerialHost.connected()) {
+      SerialHost.write(buf, count);
+      SerialHost.flush();
+    }
+  }
+
+  // SerialHost -> Serial
+  if (SerialHost.connected() && SerialHost.available()) {
+    size_t count = SerialHost.read(buf, sizeof(buf));
+    Serial1.write(buf, count);
+    Serial1.flush();
+  }
+}
 
 //--------------------------------------------------------------------+
 // setup() & loop()
@@ -101,10 +144,12 @@ void setup() {
 
   // Init USB Host on native controller roothub port0
   USBHost.begin(0);
+  SerialHost.begin(0,0);
 }
 
 void loop() {
   USBHost.task();
+  forward_serial();
   Serial1.flush();
 }
 
