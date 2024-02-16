@@ -63,6 +63,23 @@ int rc;
 
 volatile bool timer_fired = false;
 
+void led_blinking_task(void)
+{
+  const uint32_t interval_ms = 1000;
+  static uint32_t start_ms = 0;
+  static unsigned long mils = 0;
+
+  static bool led_state = false;
+
+  // Blink every interval ms
+  mils=millis();
+  if ( (mils - start_ms) < interval_ms) return; // not enough time
+  start_ms += interval_ms;
+
+  gpio_put(REDLED, led_state);
+  led_state = 1 - led_state; // toggle
+}
+
 bool tick_timer_callback(struct repeating_timer *t) {
     
     return true;
@@ -114,15 +131,6 @@ void tuh_cdc_umount_cb(uint8_t idx) {
 void forward_serial(void) {
   uint8_t buf[64];
 
-  // Serial -> SerialHost
-  if (Serial.available()) {
-    size_t count = Serial.read(buf, sizeof(buf));
-    if (SerialHost && SerialHost.connected()) {
-      SerialHost.write(buf, count);
-      SerialHost.flush();
-    }
-  }
-
   // SerialHost -> Serial
   if (SerialHost.connected() && SerialHost.available()) {
     size_t count = SerialHost.read(buf, sizeof(buf));
@@ -141,6 +149,8 @@ void setup() {
   Serial1.println("TinyUSB Native Host: Device Info Example");
 
   init_i2c_responder();
+  gpio_init(REDLED);
+  gpio_set_dir(REDLED, GPIO_OUT);
 
   // Init USB Host on native controller roothub port0
   USBHost.begin(0);
@@ -148,9 +158,11 @@ void setup() {
 }
 
 void loop() {
+  led_blinking_task();
   USBHost.task();
   forward_serial();
   Serial1.flush();
+  i2c_task();
 }
 
 //--------------------------------------------------------------------+
@@ -305,3 +317,4 @@ void utf16_to_utf8(uint16_t *temp_buf, size_t buf_len) {
   _convert_utf16le_to_utf8(temp_buf + 1, utf16_len, (uint8_t *) temp_buf, buf_len);
   ((uint8_t *) temp_buf)[utf8_len] = '\0';
 }
+

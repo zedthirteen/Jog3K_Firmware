@@ -4,17 +4,10 @@
 #include <stdint.h>
 
 #define PROTOCOL_VERSION 1
-
-#if JOG_MODULE == 1
-//led locations
-#define REDLED 21
-#define GREENLED 27
-#else
 #define REDLED 21
 #define GREENLED 22
-#endif
 
-#define ONBOARD_LED REDLED
+#define ONBOARD_LED GREENLED
 
 // Which pin on the Arduino is connected to the NeoPixels?
 #define PIN        21 // On Trinket or Gemma, suggest changing this to 1
@@ -114,6 +107,51 @@ extern const uint8_t *flash_target_contents;
 #define JOG_XRZD JOG_XR | JOG_ZD
 #define JOG_XLZU JOG_XL | JOG_ZU
 #define JOG_XLZD JOG_XL | JOG_ZD*/
+
+#define CHAR_XR   'R'
+#define CHAR_XL   'L'
+#define CHAR_YF   'F'
+#define CHAR_YB   'B'
+#define CHAR_ZU   'U'
+#define CHAR_ZD   'D'
+#define CHAR_XRYF 'r'
+#define CHAR_XRYB 'q'
+#define CHAR_XLYF 's'
+#define CHAR_XLYB 't'
+#define CHAR_XRZU 'w'
+#define CHAR_XRZD 'v'
+#define CHAR_XLZU 'u'
+#define CHAR_XLZD 'x'
+#define CHAR_AR   'A'
+#define CHAR_AL   'a'
+
+#define CMD_STATUS_REPORT_LEGACY '?'
+#define CMD_CYCLE_START 0x81   // TODO: use 0x06 ctrl-F ACK instead? or SYN/DC2/DC3?
+#define CMD_FEED_HOLD 0x82     // TODO: use 0x15 ctrl-U NAK instead?
+#define CMD_RESET 0x18 // ctrl-X (CAN)
+#define CMD_SAFETY_DOOR 0x84
+#define CMD_OVERRIDE_FAN0_TOGGLE 0x8A       // Toggle Fan 0 on/off, not implemented by the core.
+#define CMD_MPG_MODE_TOGGLE 0x8B            // Toggle MPG mode on/off, not implemented by the core.
+#define CMD_AUTO_REPORTING_TOGGLE 0x8C      // Toggle auto real time reporting if configured.
+#define CMD_OVERRIDE_FEED_RESET 0x90        // Restores feed override value to 100%.
+#define CMD_OVERRIDE_FEED_COARSE_PLUS 0x91
+#define CMD_OVERRIDE_FEED_COARSE_MINUS 0x92
+#define CMD_OVERRIDE_FEED_FINE_PLUS 0x93
+#define CMD_OVERRIDE_FEED_FINE_MINUS 0x94
+#define CMD_OVERRIDE_RAPID_RESET 0x95       // Restores rapid override value to 100%.
+#define CMD_OVERRIDE_RAPID_MEDIUM 0x96
+#define CMD_OVERRIDE_RAPID_LOW 0x97
+#define CMD_OVERRIDE_SPINDLE_RESET 0x99     // Restores spindle override value to 100%.
+#define CMD_OVERRIDE_SPINDLE_COARSE_PLUS 0x9A
+#define CMD_OVERRIDE_SPINDLE_COARSE_MINUS 0x9B
+#define CMD_OVERRIDE_SPINDLE_FINE_PLUS 0x9C
+#define CMD_OVERRIDE_SPINDLE_FINE_MINUS 0x9D
+#define CMD_OVERRIDE_SPINDLE_STOP 0x9E
+#define CMD_OVERRIDE_COOLANT_FLOOD_TOGGLE 'C'
+#define CMD_OVERRIDE_COOLANT_MIST_TOGGLE 'M'
+#define CMD_PID_REPORT 0xA2
+#define CMD_TOOL_ACK 0xA3
+#define CMD_PROBE_CONNECTED_TOGGLE 0xA4
 
 // The slave implements a 256 byte memory. To write a series of bytes, the master first
 // writes the memory address, followed by the data. The address is automatically incremented
@@ -283,6 +321,7 @@ extern uint8_t key_character;
 void init_i2c_responder (void);
 void kpstr_clear (void);
 uint8_t keypad_sendchar (uint8_t character, bool clearpin);
+void i2c_task (void);
 
 void write_nvs (void);
 

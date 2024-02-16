@@ -18,6 +18,7 @@
 // N.B. if the current address reaches 255, it will autoincrement to 0 after next read / write
 
 #include <Arduino.h>
+//#include <Wire.h>
 #include <stdio.h>
 #include <string.h>
 #include "pico/stdlib.h"
@@ -28,29 +29,22 @@
 #include "hardware/flash.h"
 
 #include "pico/time.h"
+#include "pico/stdio.h"
 
 #include <i2c_fifo.h>
 #include <i2c_slave.h>
 
 #include "i2c_jogger.h"
 
-
 // define I2C addresses to be used for this peripheral
 static const uint I2C_SLAVE_ADDRESS = 0x49;
 static const uint I2C_BAUDRATE = 100000; // 100 kHz
 
 // GPIO pins to use for I2C SLAVE
-#if JOG_MODULE == 1
-#define HALT_PIN 28
-#define KPSTR_PIN 29
+#define HALT_PIN 25
+#define KPSTR_PIN 26
 static const uint I2C_SLAVE_SDA_PIN = 0;
 static const uint I2C_SLAVE_SCL_PIN = 1;
-#else
-#define HALT_PIN 0
-#define KPSTR_PIN 10
-static const uint I2C_SLAVE_SDA_PIN = 4;
-static const uint I2C_SLAVE_SCL_PIN = 5;
-#endif
 
 //flash defines
 #define FLASH_TARGET_OFFSET (256 * 1024)
@@ -112,6 +106,36 @@ static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
     }
 }
 
+#if 0
+// Our handler is called from the I2C ISR, so it must complete quickly. Blocking calls /
+// printing to stdio may interfere with interrupt handling.
+static void i2c_receive_handler(int bytes) {
+    //case I2C_SLAVE_RECEIVE: // master has written some data
+        if (!context.mem_address_written) {
+            // writes always start with the memory address
+            context.mem_address = Wire.read();
+            context.mem_address_written = true;
+        } else {
+            // save into memory
+            context.mem[context.mem_address] = Wire.read();
+            context.mem_address++;
+        }
+}
+
+static void i2c_request_handler(void) {
+    //case I2C_SLAVE_REQUEST: // master is requesting data
+        // load from memory
+        Wire.write(context.mem[context.mem_address]);
+        context.mem_address++;
+}
+
+static void i2c_finish_handler(void) {
+    //case I2C_SLAVE_FINISH: // master has signalled Stop / Restart
+        context.mem_address_written = false;
+}
+#endif
+
+
 static void setup_slave() {
     gpio_init(I2C_SLAVE_SDA_PIN);
     gpio_set_function(I2C_SLAVE_SDA_PIN, GPIO_FUNC_I2C);
@@ -121,15 +145,9 @@ static void setup_slave() {
     gpio_set_function(I2C_SLAVE_SCL_PIN, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_SLAVE_SCL_PIN);
 
-    #if JOG_MODULE == 1
-    i2c_init(i2c0, I2C_BAUDRATE);
+     i2c_init(i2c0, I2C_BAUDRATE);
     // configure I2C0 for slave mode
     i2c_slave_init(i2c0, I2C_SLAVE_ADDRESS, &i2c_slave_handler);
-    #else
-    i2c_init(i2c1, I2C_BAUDRATE);
-    // configure I2C1 for slave mode
-    i2c_slave_init(i2c1, I2C_SLAVE_ADDRESS, &i2c_slave_handler);
-    #endif
 }
 
 uint8_t keypad_sendchar (uint8_t character, bool clearpin) {
@@ -138,16 +156,16 @@ uint8_t keypad_sendchar (uint8_t character, bool clearpin) {
 
   command_error = 0;
 
-  gpio_put(ONBOARD_LED, 0);
+  gpio_put(ONBOARD_LED, 1);
 
   while (context.mem_address_written != false && context.mem_address>0);
 
     context.mem[0] = character;
     context.mem_address = 0;
     //gpio_put(KPSTR_PIN, false);
-    sleep_us(100);
-    gpio_put(KPSTR_PIN, false);
-    sleep_us(1000);
+    //sleep_ms(100);
+    gpio_put(KPSTR_PIN, true);
+    sleep_ms(1);
     while (context.mem_address == 0 && timeout){
       sleep_us(1000);      
       timeout = timeout - 1;}
@@ -156,15 +174,15 @@ uint8_t keypad_sendchar (uint8_t character, bool clearpin) {
       command_error = 1;
     //sleep_ms(2);
     if (clearpin){
-      sleep_ms(5);
-      gpio_put(KPSTR_PIN, true);
+      sleep_us(100);
+      gpio_put(KPSTR_PIN, false);
     }
-  gpio_put(ONBOARD_LED, 1);
+  gpio_put(ONBOARD_LED, 0);
   return true;
 };
 
 void kpstr_clear (void) {
-  gpio_put(KPSTR_PIN, true);
+  gpio_put(KPSTR_PIN, false);
   sleep_ms(5);
 };
 
@@ -198,19 +216,38 @@ static char *map_coord_system (coord_system_id_t id)
     return buf;
 }
 
+void i2c_task (void){
+
+}
+
 void init_i2c_responder (void){
 
   Machine_status_packet *previous_packet = &prev_packet;
   uint8_t key_character = '\0';
 
   gpio_init(KPSTR_PIN);
+  gpio_put(KPSTR_PIN, true);
   gpio_set_dir(KPSTR_PIN, GPIO_OUT);
+
+  gpio_init(HALTBUTTON);
+  gpio_set_dir(HALTBUTTON, GPIO_IN);
+  gpio_set_pulls(HALTBUTTON,true,false);
+
+  gpio_init(ONBOARD_LED);
+  gpio_set_dir(ONBOARD_LED, GPIO_OUT);
 
     // Setup I2C0 as slave (peripheral)
   Serial1.printf("Setup I2C\r\n");
   setup_slave();
+  //Wire.setSDA(I2C_SLAVE_SDA_PIN);
+  //Wire.setSCL(I2C_SLAVE_SCL_PIN);
+  //Wire.onReceive(i2c_receive_handler);
+  //Wire.onRequest(i2c_request_handler);
+  //Wire.onFinish(i2c_finish_handler);
+  //Wire.begin();
   packet->machine_state = 255;
-  key_character = '?';
+  key_character = CMD_FEED_HOLD;
+  sleep_ms(100);
   keypad_sendchar (key_character, 1);
 
 }
