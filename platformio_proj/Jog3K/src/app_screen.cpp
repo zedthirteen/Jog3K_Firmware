@@ -249,7 +249,6 @@ void testroundrects() {
     w-=4;
     h-=6;
     color+=1100;
-    Serial.println(i);
   }
 }
 
