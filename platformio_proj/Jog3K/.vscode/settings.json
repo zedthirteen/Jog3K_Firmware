@@ -10,6 +10,7 @@
         "initializer_list": "cpp",
         "jog3k_config_ssd1351_notouch.h": "c",
         "*.tcc": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "cstddef": "cpp"
     }
 }

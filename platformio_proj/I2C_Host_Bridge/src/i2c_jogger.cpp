@@ -217,7 +217,7 @@ static char *map_coord_system (coord_system_id_t id)
 }
 
 void i2c_task (void){
-
+//
 }
 
 void init_i2c_responder (void){
@@ -239,6 +239,7 @@ void init_i2c_responder (void){
     // Setup I2C0 as slave (peripheral)
   Serial1.printf("Setup I2C\r\n");
   setup_slave();
+  sleep_ms(50);
   //Wire.setSDA(I2C_SLAVE_SDA_PIN);
   //Wire.setSCL(I2C_SLAVE_SCL_PIN);
   //Wire.onReceive(i2c_receive_handler);
@@ -247,7 +248,6 @@ void init_i2c_responder (void){
   //Wire.begin();
   packet->machine_state = 255;
   key_character = CMD_FEED_HOLD;
-  sleep_ms(100);
   keypad_sendchar (key_character, 1);
 
 }

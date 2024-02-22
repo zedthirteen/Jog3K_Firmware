@@ -79,28 +79,16 @@ Communication Status      = 'E' -read/Write  -Pin State: 0:0
 
 //###################################################IO's###################################################
 
-/*input map for Jog3k
-1 DOWN
-2 UP
-3 RIGHT
-4 LOWER
-5 RAISE
-6 SPINDLE
-7 JOGSEL2
-10 FEEDOVER_SW
-11 MIST
-12 HOLD
-13 HALT
-14 RUN
-15 FLOOD
-24 JOGSEL
-27 SPINOVER_SW
-28 HOME
-29 LEFT
 
-*/
+#define BUTTONS                       //Use Arduino IO's as Inputs. Define how many Inputs you want in total and then which Pins you want to be Inputs.
+#ifdef BUTTONS
+  #include "buttons.h"
+  //const int Buttons = 19;               //number of inputs using internal Pullup resistor. (short to ground to trigger)
+  //int ButtonMap[] = {1,2,3,4,5,6,7,10,11,12,13,14,15,24,27,28,29};
+  //uint ButtonVal=0; //bitmask value of the buttons
+#endif
 
-#define INPUTS                       //Use Arduino IO's as Inputs. Define how many Inputs you want in total and then which Pins you want to be Inputs.
+//#define INPUTS                       //Use Arduino IO's as Inputs. Define how many Inputs you want in total and then which Pins you want to be Inputs.
 #ifdef INPUTS
   const int Inputs = 19;               //number of inputs using internal Pullup resistor. (short to ground to trigger)
   int InPinmap[] = {1,2,3,4,5,6,7,10,11,12,13,14,15,24,27,28,29};
@@ -174,7 +162,7 @@ Note that Analog Pin numbering is different to the Print on the PCB.
 
   #include "pio_encoder.h"
   #include "quadrature.h"
-  #define QUADENCS 3  //how many Rotary Encoders do you want?
+  #define QUADENCS 1  //how many Rotary Encoders do you want?
   
     // Encoders have 2 signals, which must be connected to 2 pins.
 
@@ -365,6 +353,11 @@ const int debounceDelay = 50;
 
 
 //Variables for Saving States
+#ifdef BUTTONS
+  int ButtonState[Buttons];
+  int oldButtonInState[Buttons];
+  unsigned long lastButtonDebounce[Buttons];
+#endif
 #ifdef INPUTS
   int InState[Inputs];
   int oldInState[Inputs];
@@ -555,6 +548,9 @@ void loop() {
   comalive(); //if nothing is received for 10 sec. blink warning LED 
 
 
+#ifdef BUTTONS
+  readButtons(); //read Inputs & send data
+#endif
 #ifdef INPUTS
   readInputs(); //read Inputs & send data
 #endif
@@ -755,7 +751,9 @@ void reconnect(){
     oldAbsEncState = -1;
   #endif
   
-  
+  #ifdef BUTTONS
+  readButtons(); //read Inputs & send data
+#endif
   #ifdef INPUTS
     readInputs(); //read Inputs & send data
   #endif
@@ -926,6 +924,7 @@ void readInputs(){
     }
 }
 #endif
+
 #ifdef SINPUTS
 void readsInputs(){
   for(int i= 0;i<sInputs; i++){
