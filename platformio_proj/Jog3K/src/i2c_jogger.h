@@ -252,6 +252,7 @@ typedef struct Pendant_memory_map {
 extern Pendant_memory_map * pendant_memory_ptr;
 
 extern ScreenMode screenmode;
+extern Machine_status_packet *packet;
 extern Machine_status_packet prev_packet;
 extern Jogmode previous_jogmode;
 extern Jogmodify previous_jogmodify;
@@ -267,7 +268,8 @@ extern float step_calc;
 void draw_string(char * str);
 void draw_main_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet, bool force);
 void update_neopixels(Machine_status_packet *previous_packet, Machine_status_packet *packet);
-void init_multimedia (void);
+void init_screen (void);
+void init_neopixels (void);
 void write_nvs (void);
 
 #if defined(_LINUX_) && defined(__cplusplus)

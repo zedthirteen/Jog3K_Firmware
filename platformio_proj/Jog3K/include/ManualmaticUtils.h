@@ -12,7 +12,7 @@
 #define ManualmaticUtils_h
 
 #include <Arduino.h>
-#include "ManualmaticConsts.h"
+//#include "ManualmaticConsts.h"
 
 /**
    Pass __DATE__

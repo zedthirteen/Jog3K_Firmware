@@ -80,6 +80,7 @@
 enum Jogmode current_jogmode = {};
 enum Jogmodify current_jogmodify = {};
 enum ScreenMode screenmode = {};
+Machine_status_packet prev_packet = {};
 Jogmode previous_jogmode = {};
 Jogmodify previous_jogmodify = {};
 ScreenMode previous_screenmode = {};
@@ -96,11 +97,6 @@ const uint8_t encoderColumnWidth = 50; //Centre colum is reduced to 105
 const uint8_t buttonColumnWidth = 30;
 //The top Y of each axis row.
 uint8_t axisDisplayY[4] = {0, 18, 36, 52};
-
-const uint16_t displayRefreshMs = 100; //Refresh the screen 10 times per second
-unsigned long lastDisplayRefresh = 0;
-const uint16_t counterUpdateMs = 10; //Increment the example counter 100 times per second
-unsigned long lastCounterUpdate = 0;
 
 // RPI Pico
 
@@ -149,15 +145,8 @@ void init_screen (void){
   // Init Display  
   gfx.begin();
   //gfx.setRotation(1);
-  
-
-  lcdTestPattern();
-  delay(1000);
-
-  gfx.fillRect(0, 0, 128, 128, BLACK);
-
   //Set up areas
-  /*
+
   areas.axes = DisplayArea(0, 0, displayWidth, axesAreaHeight);
   areas.axesMarkers = DisplayArea(0, 0, 19, axesAreaHeight);
   areas.axesLabels = DisplayArea(20, 0, 50, axesAreaHeight);
@@ -179,7 +168,11 @@ void init_screen (void){
 
   areas.debugRow = DisplayArea(0, areas.buttonLabels[0].y(), displayWidth, areas.buttonLabels[0].h());
 
-  */
+  lcdTestPattern();
+  //delay(100);
+
+  gfx.fillRect(0, 0, 128, 128, BLACK);
+
 }
 
 // Converts an uint32 variable to string.
@@ -288,7 +281,6 @@ static void drawAxisCoord(Machine_status_packet *packet, uint8_t axis, bool forc
 }
 
 static void drawAxis(Machine_status_packet *packet, uint8_t axis, bool forceRefresh /*= false*/) {
- #if 1
  /*if ( drawn.homed[axis] != state.homed[axis] ) {
     forceRefresh = true;
     drawn.homed[axis] = state.homed[axis];
@@ -313,11 +305,10 @@ static void drawAxis(Machine_status_packet *packet, uint8_t axis, bool forceRefr
       break;
     }
   }
-  #endif
 }
 
 static void drawAxes (Machine_status_packet *packet, bool forceRefresh) {
-#if 1
+
   uint8_t numaxes;
 
   if(packet->a_coordinate < 65535)
@@ -334,7 +325,6 @@ static void drawAxes (Machine_status_packet *packet, bool forceRefresh) {
   for ( int axis = 0; axis < numaxes; axis++ ) {
     drawAxis(packet, axis, forceRefresh);
   }
-  #endif
 }
 
 void draw_dro_readout(Machine_status_packet *previous_packet, Machine_status_packet *packet){
@@ -403,8 +393,6 @@ void draw_feedrate(Machine_status_packet *previous_packet, Machine_status_packet
 }
 
 static void draw_machine_status(Machine_status_packet *previous_packet, Machine_status_packet *packet){
-
-
 #if SCREEN_ENABLED
   char charbuf[32];
 
@@ -424,11 +412,6 @@ static void draw_machine_status(Machine_status_packet *previous_packet, Machine_
 }
 
 static void draw_alt_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet){
- gfx.setCursor(0, 0);
- gfx.setTextColor(WHITE);  
- gfx.setTextSize(1);
- gfx.println("Alt Screen");
-
 #if SCREEN_ENABLED 
  char charbuf[32];
 
@@ -453,29 +436,22 @@ static void draw_alt_screen(Machine_status_packet *previous_packet, Machine_stat
 }
 
 static void draw_homing_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet){
- gfx.setCursor(0, 0);
- gfx.setTextColor(WHITE);  
- gfx.setTextSize(1);
- gfx.println("Homing");
+#if SCREEN_ENABLED 
+ char charbuf[32];
+
+#endif
 }
 
 static void draw_alarm_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet){
- gfx.setCursor(0, 0);
- gfx.setTextColor(WHITE);  
- gfx.setTextSize(1);
- gfx.println("Alarm");
+#if SCREEN_ENABLED 
+ char charbuf[32];
+
+#endif
 }
 
 static void draw_disconnected_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet){
-#if 1 
+#if SCREEN_ENABLED 
  char charbuf[32];
- 
-
- gfx.setCursor(0, 0);
- gfx.setTextColor(WHITE);  
- gfx.setTextSize(1);
- gfx.println("Disconnected");
-
 
 #endif
 }
@@ -501,19 +477,11 @@ static void draw_overrides_rpm(Machine_status_packet *previous_packet, Machine_s
 
 void draw_main_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet, bool force){ 
 #if 1
-
-  unsigned long now = to_ms_since_boot(get_absolute_time());
-
   int i = 0;
   int j = 0;
   char charbuf[32];
 
   int x, y;
-
-  //if ( now < (lastDisplayRefresh + displayRefreshMs) )
-  //  return;
-
-  lastDisplayRefresh = now;
   
   switch (screenmode){
   case JOG_MODIFY:
@@ -581,15 +549,14 @@ void draw_main_screen(Machine_status_packet *previous_packet, Machine_status_pac
 
         case STATE_ALARM : //no overrides during homing
           draw_alarm_screen(previous_packet, packet);      
-        break; //close home case         
-
+        break; //close home case                               
         default :
           draw_disconnected_screen(previous_packet, packet);          
         break; //close default case
       }//close machine_state switch statement
   }//close screen mode switch statement
 #endif  
-  //prev_packet = *packet;
+  prev_packet = *packet;
   previous_jogmode = current_jogmode;
   previous_jogmodify = current_jogmodify;
   previous_screenmode = screenmode;
