@@ -11,6 +11,11 @@
         "jog3k_config_ssd1351_notouch.h": "c",
         "*.tcc": "cpp",
         "random": "cpp",
-        "cstddef": "cpp"
+        "cstddef": "cpp",
+        "system_error": "cpp",
+        "functional": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp"
     }
 }

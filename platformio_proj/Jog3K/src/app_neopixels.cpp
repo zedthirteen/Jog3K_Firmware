@@ -36,17 +36,6 @@
 #define SHOWRAM 1
 #define TWOWAY 0
 
-//enum Jogmode current_jogmode = {};
-//enum Jogmodify current_jogmodify = {};
-//enum ScreenMode screenmode = {};
-//Machine_status_packet prev_packet = {};
-//Jogmode previous_jogmode = {};
-//Jogmodify previous_jogmodify = {};
-//ScreenMode previous_screenmode = {};
-//int command_error = 0;
-//bool screenflip = false;
-//float step_calc = 0;
-
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 uint8_t jog_color[] = {0,255,0};
@@ -69,7 +58,7 @@ void init_neopixels (void){
   pixels.show();   // Send the updated pixel colors to the hardware.
 }
 
-void update_neopixels(Machine_status_packet *previous_packet, Machine_status_packet *packet){
+void update_neopixels(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 
   //set override LEDS
   if (packet->feed_override > 100)
@@ -102,7 +91,7 @@ void update_neopixels(Machine_status_packet *previous_packet, Machine_status_pac
   pixels.setPixelColor(SPINLED,pixels.Color(rpm_color[0], rpm_color[1], rpm_color[2]));
 
   //set home LED
-  if(packet->home_state)
+  if(packet->home_state.value)
     pixels.setPixelColor(HOMELED,pixels.Color(0, 255, 0));
   else
     pixels.setPixelColor(HOMELED,pixels.Color(200, 135, 0));
@@ -120,7 +109,7 @@ void update_neopixels(Machine_status_packet *previous_packet, Machine_status_pac
     pixels.setPixelColor(COOLED,pixels.Color(0, 0, 100));  
 
   //preload jog LED colors depending on speed
-  switch (current_jogmode) {
+  switch (current_jogmode.mode) {
   case FAST :
     jog_color[0] = 255; jog_color[1] = 0; jog_color[2] = 0; //RGB
     break;
@@ -225,7 +214,7 @@ void update_neopixels(Machine_status_packet *previous_packet, Machine_status_pac
   else
     pixels.setPixelColor(JOGLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
 
-  if(packet->a_coordinate==0xFFFFFFFF && screenmode == JOG_MODIFY)
+  if(packet->coordinate.a==0xFFFFFFFF && screenmode == JOG_MODIFY)
     pixels.setPixelColor(RAISELED,pixels.Color(138, 43, 226));
   else
     pixels.setPixelColor(RAISELED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));

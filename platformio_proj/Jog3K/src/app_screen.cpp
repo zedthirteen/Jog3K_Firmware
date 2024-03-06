@@ -77,11 +77,9 @@
 
 #define OLED_SCREEN_FLIP 1
 
-enum Jogmode current_jogmode = {};
-enum Jogmodify current_jogmodify = {};
+jog_mode_t current_jogmode = {};
 enum ScreenMode screenmode = {};
-Jogmode previous_jogmode = {};
-Jogmodify previous_jogmodify = {};
+jog_mode_t previous_jogmode = {};
 ScreenMode previous_screenmode = {};
 int command_error = 0;
 bool screenflip = false;
@@ -89,18 +87,16 @@ float step_calc = 0;
 
 const uint16_t displayWidth = 128;
 const uint16_t displayHeight = 128;
-const uint8_t axesAreaHeight = 54; //All axis
+const uint8_t axesAreaHeight = 64; //All axis
+const uint8_t axesLabelWidth = 20; //All axis
+const uint8_t axesCoordWidth = 20;
+const uint8_t axesCoordHeight = 10;
 const uint8_t encoderLabelAreaHeight = 6;
 const uint8_t encoderValueAreaHeight[3] = {25, 13, 13}; //Single line, 1st line, 2nd line
 const uint8_t encoderColumnWidth = 50; //Centre colum is reduced to 105
 const uint8_t buttonColumnWidth = 30;
 //The top Y of each axis row.
 uint8_t axisDisplayY[4] = {0, 18, 36, 52};
-
-const uint16_t displayRefreshMs = 100; //Refresh the screen 10 times per second
-unsigned long lastDisplayRefresh = 0;
-const uint16_t counterUpdateMs = 10; //Increment the example counter 100 times per second
-unsigned long lastCounterUpdate = 0;
 
 // RPI Pico
 
@@ -116,6 +112,8 @@ const uint8_t * flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARG
   // to use the microSD card (see the image drawing example)
 
 Adafruit_SSD1351 gfx = Adafruit_SSD1351(SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, CS_PIN, DC_PIN, RST_PIN);
+
+DisplayAreas_s areas;
 
 /**
  * For the display of each axis Abs, G5x or DTG position
@@ -136,6 +134,26 @@ void lcdTestPattern(void)
     gfx.fillRect(0, gfx.height() * c / 8, gfx.width(), gfx.height() / 8,
       pgm_read_word(&colors[c]));
   }
+
+  //set up display areas:
+  areas.axes = DisplayArea(0, 0, displayWidth, axesAreaHeight);
+  //areas.axesMarkers = DisplayArea(0, 0, 19, axesAreaHeight);
+  areas.axesLabels = DisplayArea(0, 0, axesLabelWidth, axesAreaHeight);
+  areas.axesCoords = DisplayArea(0, axesAreaHeight, axesCoordWidth, axesCoordHeight);
+  areas.encoderLabel[0] = DisplayArea(0, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
+  areas.encoderLabel[1] = DisplayArea(encoderColumnWidth + 1, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
+  areas.encoderLabel[2] = DisplayArea((encoderColumnWidth * 2) + 2, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
+  areas.encoderValue[0] = DisplayArea(0, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
+  areas.encoderValue[1] = DisplayArea(encoderColumnWidth + 1, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
+  areas.encoderValue[2] = DisplayArea((encoderColumnWidth * 2) + 2, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
+
+  //areas.buttonLabels[0] = DisplayArea( 0, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
+  //areas.buttonLabels[1] = DisplayArea( buttonColumnWidth + 1, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
+  //areas.buttonLabels[2] = DisplayArea( (buttonColumnWidth * 2) + 2, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
+  //areas.buttonLabels[3] = DisplayArea( (buttonColumnWidth * 3) + 3, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
+  //areas.buttonLabels[4] = DisplayArea( (buttonColumnWidth * 4) + 4, areas.encoderValue[0].b() + 1, buttonColumnWidth + 1, displayHeight - areas.encoderValue[0].b() - 1);
+
+  areas.debugRow = DisplayArea(0, axesAreaHeight, displayWidth, displayHeight - axesAreaHeight);
 }
 
 void init_screen (void){
@@ -152,34 +170,13 @@ void init_screen (void){
   
 
   lcdTestPattern();
-  delay(1000);
+  delay(250);
 
   gfx.fillRect(0, 0, 128, 128, BLACK);
 
-  //Set up areas
-  /*
-  areas.axes = DisplayArea(0, 0, displayWidth, axesAreaHeight);
-  areas.axesMarkers = DisplayArea(0, 0, 19, axesAreaHeight);
-  areas.axesLabels = DisplayArea(20, 0, 50, axesAreaHeight);
-  areas.axesCoords = DisplayArea(50, 0, 52, axesAreaHeight);
-  areas.encoderLabel[0] = DisplayArea(0, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
-  areas.encoderLabel[1] = DisplayArea(encoderColumnWidth + 1, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
-  areas.encoderLabel[2] = DisplayArea((encoderColumnWidth * 2) + 2, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
-  areas.encoderValue[0] = DisplayArea(0, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
-  areas.encoderValue[1] = DisplayArea(encoderColumnWidth + 1, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
-  areas.encoderValue[2] = DisplayArea((encoderColumnWidth * 2) + 2, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
+  screenmode = none;
+  previous_screenmode = DISCONNECTED;
 
-  areas.buttonLabels[0] = DisplayArea( 0, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
-  areas.buttonLabels[1] = DisplayArea( buttonColumnWidth + 1, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
-  areas.buttonLabels[2] = DisplayArea( (buttonColumnWidth * 2) + 2, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
-  areas.buttonLabels[3] = DisplayArea( (buttonColumnWidth * 3) + 3, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
-  areas.buttonLabels[4] = DisplayArea( (buttonColumnWidth * 4) + 4, areas.encoderValue[0].b() + 1, buttonColumnWidth + 1, displayHeight - areas.encoderValue[0].b() - 1);
-
-  areas.axisMarkers = DisplayArea(0, 0, 16, axesAreaHeight);
-
-  areas.debugRow = DisplayArea(0, areas.buttonLabels[0].y(), displayWidth, areas.buttonLabels[0].h());
-
-  */
 }
 
 // Converts an uint32 variable to string.
@@ -212,46 +209,24 @@ static char *map_coord_system (coord_system_id_t id)
     return buf;
 }
 
-static void drawEncoderValue(uint8_t pos, uint8_t lineNum, const char *val, const char *uom, int bg /*= BLACK*/, int fg /*= WHITE*/ ) {
-  int16_t  x, y;
-  uint16_t w, h;
-  char buf[10];
-  strcpy(buf, val);
-  if ( strlen(uom) > 0 ) {
-    strcat(buf, uom);
-  }
-  trimTrailing(buf);
-  char b[10];
-  dtostrf(strlen(buf), 3, 0, b);
-  //If line num is 0 then only one line, if 1 then first (of 2) lines, if 2 then second (of 2) lines
-  uint8_t div = lineNum > 0 ? 2 : 1;
-  uint8_t row = lineNum > 1 ? 1 : 0;
-  gfx.fillRect(areas.encoderValue[pos].x(), areas.encoderValue[pos].yDiv(div, row), areas.encoderValue[pos].w(), areas.encoderValue[pos].hDiv(div), bg);
-  gfx.setFont(&FreeSansBold18pt7b);
-  gfx.getTextBounds(buf, areas.encoderValue[pos].x(), areas.encoderValue[pos].y(), &x, &y, &w, &h);
-  if ( lineNum > 0 || w > areas.encoderValue[pos].w() ) {
-    gfx.setFont(&FreeSansBold12pt7b);
-    gfx.getTextBounds(buf, areas.encoderValue[pos].x(), areas.encoderValue[pos].y(), &x, &y, &w, &h);
-  }
-  gfx.setTextColor(fg);
-  gfx.setCursor(areas.encoderValue[pos].xCl()-(w/2), areas.encoderValue[pos].yCl(div, row) + (h/2));
-  gfx.print(buf);
-  gfx.setTextColor(WHITE);
-}
-
-static void setNumDrawnAxes(uint8_t num) {
+void setNumDrawnAxes(uint8_t num) {
   uint8_t axes = min(max(3, num), 4);
-  uint8_t topMargin = axes == 4 ? 0 : 5;
-  uint8_t incr = (axes == 4 ? 34 : 44);
+  uint8_t topMargin = axes == 4 ? 0 : 0;
+  uint8_t incr = (axes == 4 ? 15 : 20);
   for (uint8_t i = 0; i < axes; i++) {
     axisDisplayY[i] = ( (i * incr) + topMargin );
-    axisPosition[i].setFont(&FreeMonoBold24pt7b);
+    if (axes < 4)
+      axisPosition[i].setFont(&FreeMono12pt7b);
+    else
+      axisPosition[i].setFont(&FreeMono9pt7b);
     axisPosition[i].setFormat(7, 3); //@TODO 4 for inches
-    axisPosition[i].setPosition(gfx.width()-axisPosition[i].w(), axisDisplayY[i]);    
+    axisPosition[i].setPosition(gfx.width()-axisPosition[i].w(), axisDisplayY[i]);
   }
 }
 
-static int axisColour(uint8_t axis) {
+int axisColour(uint8_t axis) {
+  //need to modify this so that the axis color is set by homing status and also possibly the currently selected axis.
+  
   /*if ( !state.homed[axis] ) {
     return RED;
   }
@@ -262,85 +237,62 @@ static int axisColour(uint8_t axis) {
   } else if ( state.displayedCoordSystem == DISPLAY_COORDS_G5X ) { //G5x
     return GREEN;
   }*/
+
+  if (axis == 0)
+    return WHITE;
+
+  if (axis == 1)
+    return BLUE;
+
+  if (axis == 2)
+    return GREEN;        
+
   return WHITE;
 }
 
-static void drawAxisLabel(uint8_t axis, bool forceRefresh /*= false*/) {
-  if ( forceRefresh ) {
-    uint8_t da = 4;
-    gfx.fillRect(areas.axesLabels.x(), areas.axes.yDiv(da, axis), areas.axesLabels.w(), areas.axes.hDiv(da), BLACK );
-    gfx.setFont(&FreeMonoBold24pt7b);
-    gfx.setCursor(areas.axesLabels.x(), areas.axes.yCl(da, axis) + 12);
-    gfx.print(AXIS_NAME[axis]);
-  }
+void drawAxisCoord(uint8_t numaxes, coord_system_id_t current_wcs) { //[3]) {
+    uint8_t da = numaxes;
+    gfx.fillRect(areas.axesCoords.x(), areas.axesCoords.y(), areas.axesCoords.w(), areas.axesCoords.h(), BLACK );
+    gfx.setFont(&Arimo_Regular_12);
+    gfx.setCursor(areas.axesCoords.x(), areas.axesCoords.y()+areas.axesCoords.h());
+    //gfx.setCursor(areas.axesCoords.x(), areas.axesCoords.y());
+
+    gfx.print("G");
+    gfx.print(map_coord_system(current_wcs));
+
 }
 
-
-static void drawAxisCoord(Machine_status_packet *packet, uint8_t axis, bool forceRefresh /*= false*/) { //[3]) {
-  if ( forceRefresh ) {
-    uint8_t da = 4;
-    gfx.fillRect(areas.axesCoords.x(), areas.axes.yDiv(da, axis), areas.axesCoords.w(), areas.axes.hDiv(da), BLACK );
-    gfx.setFont(&FreeMono9pt7b);
-    gfx.setCursor(areas.axesCoords.x(), areas.axes.yCl(da, axis) + 12);
-    gfx.print(map_coord_system(packet->current_wcs));
-    
-  }
-}
-
-static void drawAxis(Machine_status_packet *packet, uint8_t axis, bool forceRefresh /*= false*/) {
- #if 1
- /*if ( drawn.homed[axis] != state.homed[axis] ) {
-    forceRefresh = true;
-    drawn.homed[axis] = state.homed[axis];
-  }*/
-  gfx.setTextColor(axisColour(axis));
-  drawAxisLabel(axis, forceRefresh);
-  drawAxisCoord(packet, axis, forceRefresh);
-  bool updated = true;
-  if ( forceRefresh || updated ) {
-    switch (axis){
-      case 0:
-        axisPosition[axis].draw(packet->x_coordinate, axisColour(axis), forceRefresh );
-      break;
-      case 1:
-        axisPosition[axis].draw(packet->y_coordinate, axisColour(axis), forceRefresh );
-      break;
-      case 2:
-        axisPosition[axis].draw(packet->z_coordinate, axisColour(axis), forceRefresh );
-      break;
-      case 3:
-        axisPosition[axis].draw(packet->a_coordinate, axisColour(axis), forceRefresh );
-      break;
-    }
-  }
-  #endif
-}
-
-static void drawAxes (Machine_status_packet *packet, bool forceRefresh) {
-#if 1
-  uint8_t numaxes;
-
-  if(packet->a_coordinate < 65535)
-    numaxes = 4;
+void setup_dro_readout(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
+  static uint8_t numaxes = 0;
+  gfx.setCursor(0, 110);
+  gfx.setTextColor(WHITE);  
+  gfx.setTextSize(1);
+  gfx.println("Draw DRO");
+  //change this to read the a coord and update to 3 or 4 axes
+  numaxes = 3;
+  setNumDrawnAxes(numaxes);
+  drawAxisCoord(numaxes, packet->current_wcs);
+  gfx.fillRect(areas.axesLabels.x(), areas.axesLabels.y(), areas.axesLabels.w(), areas.axesLabels.h(), BLACK );
+  uint8_t axes = min(max(3, numaxes), 4);
+  uint8_t topMargin = 15;
+  uint8_t incr = (axes == 4 ? 15 : 20);
+  if (numaxes < 4)
+    gfx.setFont(&FreeMonoBold12pt7b);
   else
-    numaxes =3;
-
-  if ( forceRefresh) {
-    forceRefresh = true;
-    gfx.fillRect(areas.axes.x(), areas.axes.y(), areas.axes.w(), areas.axes.h(), BLACK);
-    setNumDrawnAxes(numaxes);
+    gfx.setFont(&FreeMono9pt7b);
+  for (int i = 0; i<numaxes; i++){
+    gfx.setTextColor(axisColour(i));
+    gfx.setCursor(areas.axesLabels.x(), ( (i * incr) + topMargin ));
+    gfx.print(AXIS_NAME[i]);
   }
-
-  for ( int axis = 0; axis < numaxes; axis++ ) {
-    drawAxis(packet, axis, forceRefresh);
-  }
-  #endif
+           
 }
 
-void draw_dro_readout(Machine_status_packet *previous_packet, Machine_status_packet *packet){
+void draw_dro_readout(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 
   #if 1
-  char charbuf[32];
+  static uint8_t numaxes = 0;
+
 
   if (packet->current_wcs != previous_packet->current_wcs || screenmode != previous_screenmode){
 
@@ -351,18 +303,25 @@ void draw_dro_readout(Machine_status_packet *previous_packet, Machine_status_pac
     //oledWriteString(&oled, 0,-1,-1,(char *)"  ", FONT_6x8, 0, 1);
   }
 
-  if(packet->x_coordinate != previous_packet->x_coordinate || 
-      packet->y_coordinate != previous_packet->y_coordinate || 
-      packet->z_coordinate != previous_packet->z_coordinate || 
-      packet->a_coordinate != previous_packet->a_coordinate ||
+  if(packet->coordinate.x != previous_packet->coordinate.x || 
+      packet->coordinate.y != previous_packet->coordinate.y || 
+      packet->coordinate.z != previous_packet->coordinate.z || 
+      packet->coordinate.a != previous_packet->coordinate.a ||
       screenmode != previous_screenmode){
-        drawAxes(packet, 0);
+    //if(true){      
+          if(screenmode != previous_screenmode){
+            setup_dro_readout(packet, previous_packet);
+          }
+
+          for( int axis = 0; axis < 3; axis++){
+              axisPosition[axis].draw(packet->coordinate.values[axis], axisColour(axis), true);
+          }
   }
 
   #endif
 }
 
-void draw_feedrate(Machine_status_packet *previous_packet, Machine_status_packet *packet){
+void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 
 #if SCREEN_ENABLED
   char charbuf[32];
@@ -402,7 +361,7 @@ void draw_feedrate(Machine_status_packet *previous_packet, Machine_status_packet
 #endif
 }
 
-static void draw_machine_status(Machine_status_packet *previous_packet, Machine_status_packet *packet){
+static void draw_machine_status(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 
 
 #if SCREEN_ENABLED
@@ -423,7 +382,7 @@ static void draw_machine_status(Machine_status_packet *previous_packet, Machine_
 #endif
 }
 
-static void draw_alt_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet){
+static void draw_alt_screen(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
  gfx.setCursor(0, 0);
  gfx.setTextColor(WHITE);  
  gfx.setTextSize(1);
@@ -452,35 +411,28 @@ static void draw_alt_screen(Machine_status_packet *previous_packet, Machine_stat
 #endif
 }
 
-static void draw_homing_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet){
+static void draw_homing_screen(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
  gfx.setCursor(0, 0);
  gfx.setTextColor(WHITE);  
  gfx.setTextSize(1);
  gfx.println("Homing");
 }
 
-static void draw_alarm_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet){
+static void draw_alarm_screen(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
  gfx.setCursor(0, 0);
  gfx.setTextColor(WHITE);  
  gfx.setTextSize(1);
  gfx.println("Alarm");
 }
 
-static void draw_disconnected_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet){
-#if 1 
- char charbuf[32];
- 
-
- gfx.setCursor(0, 0);
+static void draw_disconnected_screen(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
+ gfx.setCursor(0, 100);
  gfx.setTextColor(WHITE);  
  gfx.setTextSize(1);
  gfx.println("Disconnected");
-
-
-#endif
 }
 
-static void draw_overrides_rpm(Machine_status_packet *previous_packet, Machine_status_packet *packet){
+static void draw_overrides_rpm(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 #if SCREEN_ENABLED
   char charbuf[32];
 
@@ -499,7 +451,7 @@ static void draw_overrides_rpm(Machine_status_packet *previous_packet, Machine_s
 #endif
 }
 
-void draw_main_screen(Machine_status_packet *previous_packet, Machine_status_packet *packet, bool force){ 
+void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_packet_t *packet, bool force){ 
 #if 1
 
   unsigned long now = to_ms_since_boot(get_absolute_time());
@@ -509,12 +461,7 @@ void draw_main_screen(Machine_status_packet *previous_packet, Machine_status_pac
   char charbuf[32];
 
   int x, y;
-
-  //if ( now < (lastDisplayRefresh + displayRefreshMs) )
-  //  return;
-
-  lastDisplayRefresh = now;
-  
+ 
   switch (screenmode){
   case JOG_MODIFY:
   //put hints about alternate button functions here. 
@@ -529,7 +476,7 @@ void draw_main_screen(Machine_status_packet *previous_packet, Machine_status_pac
     }
 
     if((previous_screenmode == ALARM || previous_screenmode == HOMING) &&
-        (screenmode == DEFAULT ||
+        (screenmode == DISCONNECTED ||
         screenmode == JOGGING ||
         screenmode == TOOL_CHANGE ||
         screenmode == RUN)){
@@ -581,17 +528,20 @@ void draw_main_screen(Machine_status_packet *previous_packet, Machine_status_pac
 
         case STATE_ALARM : //no overrides during homing
           draw_alarm_screen(previous_packet, packet);      
-        break; //close home case         
+        break; //close home case              
 
         default :
-          draw_disconnected_screen(previous_packet, packet);          
+          draw_disconnected_screen(previous_packet, packet);
+          //draw_feedrate(previous_packet, packet);
+          //draw_machine_status(previous_packet, packet);
+          draw_dro_readout(previous_packet, packet);
+          //draw_overrides_rpm(previous_packet, packet);                     
         break; //close default case
       }//close machine_state switch statement
   }//close screen mode switch statement
 #endif  
   //prev_packet = *packet;
   previous_jogmode = current_jogmode;
-  previous_jogmodify = current_jogmodify;
   previous_screenmode = screenmode;
 }//close draw main screen
 

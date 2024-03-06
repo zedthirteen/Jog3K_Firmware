@@ -88,12 +88,8 @@ enum ErrorMessage_e : uint8_t {
       DisplayArea axesCoords;
       DisplayArea encoderLabel[3];
       DisplayArea encoderValue[3];
-      DisplayArea buttonLabels[5];
-      DisplayArea axisMarkers;
       DisplayArea debugRow;
     };
-
-    DisplayAreas_s areas;
 
     struct DrawnState_s {
       Axis_e currentAxis = AXIS_NONE;

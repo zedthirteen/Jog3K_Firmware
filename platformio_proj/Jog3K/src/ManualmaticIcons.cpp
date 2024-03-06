@@ -17,6 +17,14 @@
 #include "ManualmaticIcons.h"
 #include "ManualmaticUtils.h"
 
+#include <Fonts/FreeMono9pt7b.h>
+#include <Fonts/FreeMono12pt7b.h>
+#include <Fonts/FreeMonoBold12pt7b.h>
+#include <Fonts/FreeMonoBold18pt7b.h>
+#include <Fonts/FreeMonoBold24pt7b.h>
+#include <Fonts/FreeSansBold9pt7b.h>
+#include <Fonts/FreeSansBold12pt7b.h>
+#include <Fonts/FreeSansBold18pt7b.h>
 
 ManualmaticIcons::ManualmaticIcons(Adafruit_GFX& gfx)
   : gfx(gfx) {}

@@ -16,6 +16,7 @@
 // Subsequent bytes will be returned from the following ram locations (again current address auto increments)
 //
 // N.B. if the current address reaches 255, it will autoincrement to 0 after next read / write
+#if 0
 
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -574,3 +575,5 @@ indigo = (75, 0, 130)
 violet = (138, 43, 226)
 off = (0, 0, 0)
 */
+
+#endif
