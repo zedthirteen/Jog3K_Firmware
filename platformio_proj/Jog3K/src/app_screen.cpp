@@ -32,6 +32,7 @@
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1351.h>
+#include "jog3k_icons.h"
 
 
 #include <ManualmaticFonts.h>
@@ -91,9 +92,11 @@ const uint8_t axesAreaHeight = 64; //All axis
 const uint8_t axesLabelWidth = 20; //All axis
 const uint8_t axesCoordWidth = 20;
 const uint8_t axesCoordHeight = 10;
-const uint8_t encoderLabelAreaHeight = 6;
-const uint8_t encoderValueAreaHeight[3] = {25, 13, 13}; //Single line, 1st line, 2nd line
-const uint8_t encoderColumnWidth = 50; //Centre colum is reduced to 105
+const uint8_t feedRateHeight = 20;
+const uint8_t feedRateWidth = 64;
+//const uint8_t encoderLabelAreaHeight = 6;
+//const uint8_t encoderValueAreaHeight[3] = {25, 13, 13}; //Single line, 1st line, 2nd line
+//const uint8_t encoderColumnWidth = 50; 
 const uint8_t buttonColumnWidth = 30;
 //The top Y of each axis row.
 uint8_t axisDisplayY[4] = {0, 18, 36, 52};
@@ -119,6 +122,11 @@ DisplayAreas_s areas;
  * For the display of each axis Abs, G5x or DTG position
  */
 DisplayNumber axisPosition[4] = { DisplayNumber(gfx), DisplayNumber(gfx), DisplayNumber(gfx), DisplayNumber(gfx) }; 
+DisplayNumber feedrate_display = DisplayNumber(gfx);
+DisplayNumber rpm_display = DisplayNumber(gfx);
+DisplayNumber feed_over_display = DisplayNumber(gfx);
+DisplayNumber spindlee_over_display = DisplayNumber(gfx);
+
 
 /**************************************************************************/
 /*! 
@@ -136,16 +144,22 @@ void lcdTestPattern(void)
   }
 
   //set up display areas:
-  areas.axes = DisplayArea(0, 0, displayWidth, axesAreaHeight);
+  areas.feedRate = DisplayArea(0,0,feedRateWidth,feedRateHeight);// Feed rate gets half of bar at top
+  areas.spindleRPM = DisplayArea(0,feedRateWidth,feedRateWidth,feedRateHeight);// RPM gets other half of width
+  areas.axes = DisplayArea(0, feedRateHeight, displayWidth, axesAreaHeight);  //DRO under feed.
   //areas.axesMarkers = DisplayArea(0, 0, 19, axesAreaHeight);
-  areas.axesLabels = DisplayArea(0, 0, axesLabelWidth, axesAreaHeight);
-  areas.axesCoords = DisplayArea(0, axesAreaHeight, axesCoordWidth, axesCoordHeight);
-  areas.encoderLabel[0] = DisplayArea(0, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
-  areas.encoderLabel[1] = DisplayArea(encoderColumnWidth + 1, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
-  areas.encoderLabel[2] = DisplayArea((encoderColumnWidth * 2) + 2, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
-  areas.encoderValue[0] = DisplayArea(0, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
-  areas.encoderValue[1] = DisplayArea(encoderColumnWidth + 1, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
-  areas.encoderValue[2] = DisplayArea((encoderColumnWidth * 2) + 2, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
+  areas.axesLabels = DisplayArea(0, feedRateHeight, axesLabelWidth, axesAreaHeight); //Axes labels down the side
+  areas.axesCoords = DisplayArea(0, axesAreaHeight+feedRateHeight, axesCoordWidth, axesCoordHeight); //Current coordinate system under axes
+  areas.infoMessage = DisplayArea(0,120,displayWidth,displayHeight-120); //info message along the bottom
+  areas.machineStatus = DisplayArea(axesCoordWidth, axesAreaHeight + feedRateHeight, displayWidth - axesCoordWidth, axesCoordHeight); //status beside coordinates
+  areas.feedOverride= DisplayArea(0,axesAreaHeight+axesCoordHeight+20,64,feedRateHeight);// Feed over gets half of width
+  areas.spindleOverride= DisplayArea(64,axesAreaHeight+axesCoordHeight+20,64,feedRateHeight);// spindle over gets other half of width
+  //areas.encoderLabel[0] = DisplayArea(0, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
+  //areas.encoderLabel[1] = DisplayArea(encoderColumnWidth + 1, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
+  //areas.encoderLabel[2] = DisplayArea((encoderColumnWidth * 2) + 2, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
+  //areas.encoderValue[0] = DisplayArea(0, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
+  //areas.encoderValue[1] = DisplayArea(encoderColumnWidth + 1, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
+  //areas.encoderValue[2] = DisplayArea((encoderColumnWidth * 2) + 2, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
 
   //areas.buttonLabels[0] = DisplayArea( 0, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
   //areas.buttonLabels[1] = DisplayArea( buttonColumnWidth + 1, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
@@ -209,16 +223,52 @@ static char *map_coord_system (coord_system_id_t id)
     return buf;
 }
 
+static void drawIconPlay(Coords_s cp, uint16_t c/*=WHITE*/, uint8_t h/*=26*/) {
+    uint8_t w = h / 1.5;
+    gfx.fillTriangle(
+      cp.x-(w/2)+3, cp.y-(0),
+      cp.x+(w/2)+3, cp.y+(h/2),
+      cp.x-(w/2)+3, cp.y+(h),
+      c
+    );
+}
+
+static void drawPulse(Coords_s cp, uint8_t r, int c/*=WHITE*/) {
+  gfx.fillCircle(cp.x+r, cp.y+r, r, c);
+  gfx.fillCircle(cp.x+(r*3), cp.y+r, r, c);
+  gfx.fillTriangle(cp.x, cp.y+r+1,
+                   cp.x+(r*4), cp.y+r+1, 
+                   cp.x+(r*2), cp.y+(r*3.5), 
+                   c);
+}
+
+static void drawIconOneStep(Coords_s cp, uint16_t c/*=WHITE*/) {
+    uint16_t x = cp.x;
+    uint8_t y = cp.y;
+    uint8_t s = 4; //step size
+    gfx.setFont(NULL);
+    gfx.setTextColor(c);
+    gfx.setCursor(x - 1, cp.y+3);
+    gfx.print("1");
+    for ( uint8_t i = 0; i < 2; (i++) ) {
+      gfx.drawLine(x + (s * i), y + (s * i), x + (s * i) + s, y + (s * i), c);
+      gfx.drawLine(x + (s * i) + s, y + (s * i), x + (s * i) + s, y + (s * i) + s, c);
+    }
+    gfx.setTextColor(WHITE);
+    gfx.setFont(NULL);
+}
+
 void setNumDrawnAxes(uint8_t num) {
   uint8_t axes = min(max(3, num), 4);
   uint8_t topMargin = axes == 4 ? 0 : 0;
   uint8_t incr = (axes == 4 ? 15 : 20);
   for (uint8_t i = 0; i < axes; i++) {
-    axisDisplayY[i] = ( (i * incr) + topMargin );
+    axisDisplayY[i] = (areas.axes.y() + (i * incr) + topMargin );
     if (axes < 4)
-      axisPosition[i].setFont(&FreeMono12pt7b);
+      //axisPosition[i].setFont(&FreeMono12pt7b);
+      axisPosition[i].begin(&FreeMono12pt7b);
     else
-      axisPosition[i].setFont(&FreeMono9pt7b);
+      axisPosition[i].begin(&FreeMono9pt7b);
     axisPosition[i].setFormat(7, 3); //@TODO 4 for inches
     axisPosition[i].setPosition(gfx.width()-axisPosition[i].w(), axisDisplayY[i]);
   }
@@ -250,6 +300,14 @@ int axisColour(uint8_t axis) {
   return WHITE;
 }
 
+void print_info_string(char *infostring){
+  static uint8_t numaxes = 0;
+  gfx.setCursor(0, 120);
+  gfx.setTextColor(WHITE);  
+  gfx.setTextSize(1);
+  gfx.println(infostring);
+}
+
 void drawAxisCoord(uint8_t numaxes, coord_system_id_t current_wcs) { //[3]) {
     uint8_t da = numaxes;
     gfx.fillRect(areas.axesCoords.x(), areas.axesCoords.y(), areas.axesCoords.w(), areas.axesCoords.h(), BLACK );
@@ -264,10 +322,7 @@ void drawAxisCoord(uint8_t numaxes, coord_system_id_t current_wcs) { //[3]) {
 
 void setup_dro_readout(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
   static uint8_t numaxes = 0;
-  gfx.setCursor(0, 110);
-  gfx.setTextColor(WHITE);  
-  gfx.setTextSize(1);
-  gfx.println("Draw DRO");
+  print_info_string("Draw DRO Info");
   //change this to read the a coord and update to 3 or 4 axes
   numaxes = 3;
   setNumDrawnAxes(numaxes);
@@ -282,7 +337,7 @@ void setup_dro_readout(machine_status_packet_t *previous_packet, machine_status_
     gfx.setFont(&FreeMono9pt7b);
   for (int i = 0; i<numaxes; i++){
     gfx.setTextColor(axisColour(i));
-    gfx.setCursor(areas.axesLabels.x(), ( (i * incr) + topMargin ));
+    gfx.setCursor(areas.axesLabels.x(), (areas.axes.y() + (i * incr) + topMargin ));
     gfx.print(AXIS_NAME[i]);
   }
            
@@ -290,18 +345,7 @@ void setup_dro_readout(machine_status_packet_t *previous_packet, machine_status_
 
 void draw_dro_readout(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 
-  #if 1
   static uint8_t numaxes = 0;
-
-
-  if (packet->current_wcs != previous_packet->current_wcs || screenmode != previous_screenmode){
-
-    //need to find a place to put the G5xx word.
-
-    //oledWriteString(&oled, 0,0,2,(char *)"                G", FONT_6x8, 0, 1);
-    //oledWriteString(&oled, 0,-1,-1,map_coord_system(packet->current_wcs), FONT_6x8, 0, 1);
-    //oledWriteString(&oled, 0,-1,-1,(char *)"  ", FONT_6x8, 0, 1);
-  }
 
   if(packet->coordinate.x != previous_packet->coordinate.x || 
       packet->coordinate.y != previous_packet->coordinate.y || 
@@ -314,31 +358,50 @@ void draw_dro_readout(machine_status_packet_t *previous_packet, machine_status_p
           }
 
           for( int axis = 0; axis < 3; axis++){
-              axisPosition[axis].draw(packet->coordinate.values[axis], axisColour(axis), true);
+              axisPosition[axis].draw(packet->coordinate.values[axis], axisColour(axis), false);
           }
   }
 
-  #endif
+
 }
 
 void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 
-#if SCREEN_ENABLED
-  char charbuf[32];
-
   if (packet->machine_state == STATE_HOLD){
-    oledWriteString(&oled, 0,0,INFOLINE,(char *)"    HOLDING     ", JOGFONT, 0, 1);
+    
+    if(previous_packet->machine_state!=STATE_HOLD){
+      //clear the feedrate section and write HOLDING text
+      gfx.fillRect(areas.feedRate.x(), areas.feedRate.y(), areas.feedRate.w(), areas.feedRate.h(), BLACK );
+      gfx.setFont(&Arimo_Regular_12);
+      gfx.setCursor(areas.feedRate.x(), areas.feedRate.y()+areas.feedRate.h());
+      //gfx.setCursor(areas.axesCoords.x(), areas.axesCoords.y());
+
+      gfx.print("HOLDING");
+    }
     return;
   }
   
   if(packet->machine_state == STATE_CYCLE){
-    sprintf(charbuf, "        : %3.3f ", packet->feed_rate);
-    oledWriteString(&oled, 0,0,INFOLINE,charbuf, INFOFONT, 0, 1);
-
-    oledWriteString(&oled, 0,0,INFOLINE,(char *)"RUN FEED", INFOFONT, 0, 1);
+    //if entering cycle mode, clear and redraw the text
+    if(previous_packet->machine_state!=STATE_CYCLE){
+      //clear the feedrate section and write text and set up the number
+      gfx.fillRect(areas.feedRate.x(), areas.feedRate.y(), areas.feedRate.w(), areas.feedRate.h(), BLACK );
+      feedrate_display.setFont(&Arimo_Regular_12);
+      feedrate_display.setFormat(4,0);
+      //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
+      feedrate_display.setPosition(gfx.width()-feedrate_display.w(), areas.feedRate.y()+1);
+      //feedrate_display.begin();  
+      gfx.setFont(&Arimo_Regular_12);
+      gfx.setCursor(areas.feedRate.x(), areas.feedRate.y()+areas.feedRate.h());
+      //gfx.setCursor(areas.axesCoords.x(), areas.axesCoords.y());
+      gfx.print("RUN");
+    }
+    feedrate_display.draw(packet->feed_rate,0);
     return;
   }
 
+
+#if 0
   if (packet->jog_mode!=previous_packet->jog_mode || packet->jog_stepsize!=previous_packet->jog_stepsize ||
       screenmode != previous_screenmode){
     sprintf(charbuf, "        : %3.3f ", packet->jog_stepsize);
@@ -359,9 +422,37 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
         }//close jog states
   }
 #endif
+
+  if(packet->machine_state == STATE_DISCONNECTED){
+    //if entering cycle mode, clear and redraw the text
+    if(previous_packet->machine_state!=STATE_DISCONNECTED){
+      //clear the feedrate section and write text and set up the number
+      gfx.fillRect(areas.feedRate.x(), areas.feedRate.y(), areas.feedRate.w(), areas.feedRate.h(), BLACK );
+      feedrate_display.begin(&FreeMono9pt7b);
+      feedrate_display.setFormat(3,0);
+      //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
+      feedrate_display.setPosition(feedRateWidth-(feedrate_display.w()), areas.feedRate.y()+1);
+      gfx.setFont(&Arimo_Regular_12);
+      //gfx.setCursor(areas.feedRate.x(), areas.feedRate.y()+areas.feedRate.h());
+      gfx.setCursor(areas.feedRate.x(), areas.feedRate.y()+20);
+      Coords_s icon = {areas.feedRate.x(), areas.feedRate.y()};
+      //gfx.print("FD");
+      drawIconPlay(icon, WHITE, feedRateHeight);
+      gfx.drawRGBBitmap(20, 20, runperson, 32, 32);
+    }
+    feedrate_display.draw(packet->feed_rate,0);
+    return;
+  }
+
 }
 
 static void draw_machine_status(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
+
+ gfx.setCursor(0, 100);
+ gfx.setTextColor(WHITE);  
+ gfx.setTextSize(1);
+ gfx.println("Disconnected");
+
 
 
 #if SCREEN_ENABLED
@@ -422,14 +513,7 @@ static void draw_alarm_screen(machine_status_packet_t *previous_packet, machine_
  gfx.setCursor(0, 0);
  gfx.setTextColor(WHITE);  
  gfx.setTextSize(1);
- gfx.println("Alarm");
-}
-
-static void draw_disconnected_screen(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
- gfx.setCursor(0, 100);
- gfx.setTextColor(WHITE);  
- gfx.setTextSize(1);
- gfx.println("Disconnected");
+ gfx.println("Alarm Screen");
 }
 
 static void draw_overrides_rpm(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
@@ -465,95 +549,87 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
   switch (screenmode){
   case JOG_MODIFY:
   //put hints about alternate button functions here. 
-  if(screenmode != previous_screenmode){
+  if(screenmode != JOG_MODIFY){
     gfx.fillScreen(0);
     draw_alt_screen(previous_packet, packet);
   }
   break;
+
+  //just small edits for most screens
+
+  case ALARM:
+  if(screenmode != previous_screenmode){
+    gfx.fillScreen(0);
+    draw_alarm_screen(previous_packet, packet);
+  }
+  break;
+
+  case HOMING:
+  if(screenmode != previous_screenmode){
+    gfx.fillScreen(0);
+    draw_homing_screen(previous_packet, packet);
+  }
+  break;
+
+  //most of the time use the DRO screen
+  case DISCONNECTED:
+  case JOGGING:
+  case RUN:
+  case HOLD:
+  case TOOL_CHANGE:
   default:  
-    if(previous_screenmode == JOG_MODIFY){
+    if(previous_screenmode != screenmode){
       gfx.fillScreen(0);
     }
 
-    if((previous_screenmode == ALARM || previous_screenmode == HOMING) &&
-        (screenmode == DISCONNECTED ||
-        screenmode == JOGGING ||
-        screenmode == TOOL_CHANGE ||
-        screenmode == RUN)){
-      gfx.fillScreen(0);
-    } 
+    //if(packet->machine_state != previous_packet->machine_state)
+    //  oledFill(&oled, 0,1);//clear screen on state change
 
-      //if(packet->machine_state != previous_packet->machine_state)
-      //  oledFill(&oled, 0,1);//clear screen on state change
+    switch (packet->machine_state){
+      case STATE_JOG : //jogging is allowed       
+      case STATE_IDLE : //jogging is allowed
+        draw_feedrate(previous_packet, packet);
+        draw_machine_status(previous_packet, packet);
+        draw_dro_readout(previous_packet, packet);
+        draw_overrides_rpm(previous_packet, packet);        
+      break;//close idle state
 
-      switch (packet->machine_state){
-        case STATE_JOG : //jogging is allowed       
-        case STATE_IDLE : //jogging is allowed
-          draw_feedrate(previous_packet, packet);
-          draw_machine_status(previous_packet, packet);
-          draw_dro_readout(previous_packet, packet);
-          draw_overrides_rpm(previous_packet, packet);        
-        break;//close idle state
+      case STATE_CYCLE :
+        //can still adjust overrides during hold
+        //no jog during hold, show feed rate.
+        draw_feedrate(previous_packet, packet);
+        draw_machine_status(previous_packet, packet);
+        draw_dro_readout(previous_packet, packet);
+        draw_overrides_rpm(previous_packet, packet);   
+      break; //close cycle case        
 
-        case STATE_CYCLE :
-          //can still adjust overrides during hold
-          //no jog during hold, show feed rate.
-          draw_feedrate(previous_packet, packet);
-          draw_machine_status(previous_packet, packet);
-          draw_dro_readout(previous_packet, packet);
-          draw_overrides_rpm(previous_packet, packet);   
-        break; //close cycle case        
+      case STATE_HOLD :
+        draw_feedrate(previous_packet, packet);
+        draw_machine_status(previous_packet, packet);
+        draw_dro_readout(previous_packet, packet);
+        draw_overrides_rpm(previous_packet, packet);                 
+      break; //close hold case
 
-        case STATE_HOLD :
-          draw_feedrate(previous_packet, packet);
-          draw_machine_status(previous_packet, packet);
-          draw_dro_readout(previous_packet, packet);
-          draw_overrides_rpm(previous_packet, packet);                 
-        break; //close hold case
+      case STATE_TOOL_CHANGE :
+        //dream feature is to put tool info/comment/number on screen during tool change.
+        //cannot adjust overrides during tool change
+        //jogging allowed during tool change
+        draw_feedrate(previous_packet, packet);
+        draw_machine_status(previous_packet, packet);
+        draw_dro_readout(previous_packet, packet);
+        draw_overrides_rpm(previous_packet, packet);      
+      break; //close tool case     
 
-        case STATE_TOOL_CHANGE :
-          //dream feature is to put tool info/comment/number on screen during tool change.
-          //cannot adjust overrides during tool change
-          //jogging allowed during tool change
-          draw_feedrate(previous_packet, packet);
-          draw_machine_status(previous_packet, packet);
-          draw_dro_readout(previous_packet, packet);
-          draw_overrides_rpm(previous_packet, packet);      
-        break; //close tool case
-
-        case STATE_HOMING : //no overrides during homing
-          //oledFill(&oled, 0,1);
-          draw_homing_screen(previous_packet, packet);
-        break; //close home case
-
-        case STATE_ALARM : //no overrides during homing
-          draw_alarm_screen(previous_packet, packet);      
-        break; //close home case              
-
-        default :
-          draw_disconnected_screen(previous_packet, packet);
-          //draw_feedrate(previous_packet, packet);
-          //draw_machine_status(previous_packet, packet);
-          draw_dro_readout(previous_packet, packet);
-          //draw_overrides_rpm(previous_packet, packet);                     
-        break; //close default case
-      }//close machine_state switch statement
+      default :
+        draw_feedrate(previous_packet, packet);
+        draw_machine_status(previous_packet, packet);
+        //draw_dro_readout(previous_packet, packet);
+        draw_overrides_rpm(previous_packet, packet);                     
+      break; //close default case
+    }//close machine_state switch statement
   }//close screen mode switch statement
 #endif  
   //prev_packet = *packet;
   previous_jogmode = current_jogmode;
   previous_screenmode = screenmode;
 }//close draw main screen
-
-// Main loop - initilises system and then loops while interrupts get on with processing the data
-
-/*
-red = (255, 0, 0)
-orange = (255, 165, 0)
-yellow = (255, 150, 0)
-green = (0, 255, 0)
-blue = (0, 0, 255)
-indigo = (75, 0, 130)
-violet = (138, 43, 226)
-off = (0, 0, 0)
-*/

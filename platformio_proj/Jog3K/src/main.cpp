@@ -86,6 +86,9 @@ void setup() {
 
   Serial1.println("Jog3K serial debug");
   //Serial.println("Jog3K serial debug");
+
+  previous_statuspacket->machine_state = MachineState_Other;
+
 }
 
 void receive_data(void){
@@ -112,6 +115,7 @@ void receive_data(void){
       statuspacket->coordinate.y = num * -7.89;
       statuspacket->coordinate.z = num * 10;
       statuspacket->coordinate.a = num * 3;
+      statuspacket->feed_rate = num * 100;
       num += 0.1;
   }
 }

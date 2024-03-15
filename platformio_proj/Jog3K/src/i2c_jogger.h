@@ -5,6 +5,11 @@
 #include <Fonts/FreeMono9pt7b.h>
 #include <Fonts/FreeMono12pt7b.h>
 #include <Fonts/FreeMonoBold12pt7b.h>
+#include <Fonts/FreeMonoBold18pt7b.h>
+#include <Fonts/FreeMonoBold24pt7b.h>
+#include <Fonts/FreeSansBold9pt7b.h>
+#include <Fonts/FreeSansBold12pt7b.h>
+#include <Fonts/FreeSansBold18pt7b.h>
 
 
 #define PROTOCOL_VERSION 1
@@ -22,6 +27,7 @@
 //extern const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 extern const uint8_t *flash_target_contents;
 
+#define STATE_DISCONNECTED  0
 #define STATE_ALARM         1 //!< In alarm state. Locks out all g-code processes. Allows settings access.
 #define STATE_CYCLE         2 //!< Cycle is running or motions are being executed.
 #define STATE_HOLD          3 //!< Active feed hold

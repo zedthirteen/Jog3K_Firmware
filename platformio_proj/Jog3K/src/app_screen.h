@@ -86,39 +86,13 @@ enum ErrorMessage_e : uint8_t {
       DisplayArea axesMarkers;
       DisplayArea axesLabels;
       DisplayArea axesCoords;
-      DisplayArea encoderLabel[3];
-      DisplayArea encoderValue[3];
       DisplayArea debugRow;
-    };
-
-    struct DrawnState_s {
-      Axis_e currentAxis = AXIS_NONE;
-      Axis_e joystickAxis = AXIS_NONE;
-      uint8_t homed[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-      float displayedAxisValues[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-      uint8_t displayedAxes = 4;
-      uint8_t displayedCoordSystem = 2;
-      uint8_t g5xIndex = 1;
-      float spindleOverride = 1;
-      float spindleSpeed = 0; // Commanded spindle speed (multiplied by override to give rpm)
-      float spindleRpm = 0; // Actual spindale speed
-      int8_t spindleDirection = 0; //Indicates whether spindle is on or off 1=fwd, -1=rev, 0=stopped
-      float rapidrate = 1;
-      float rapidSpeed = 0;
-      float rapid_vel = 0; //locally calculated for display based on current_vel & motion_type
-      float feed_vel = 0; //locally calculated for display based on current_vel & motion_type
-      float feedrate = 1;
-      float jogVelocity[2] = { 180, 3000 }; //Sent to serial (as mm/min) but does not update gmoccapy
-      bool pulseDrawn = false;
-      JogRange_e jogVelocityRange = JOG_RANGE_HIGH;
-      uint8_t currentJogIncrement = 3;
-      ButtonRow_e buttonRow = BUTTON_ROW_NONE;
-      Task_state_e task_state = STATE_INIT;
-      Screen_e screen = SCREEN_INIT;
-      Task_mode_e task_mode = MODE_UNKNOWN;
-      Flood_e flood = FLOOD_OFF;
-      Mist_e mist = MIST_OFF;
-      ErrorMessage_e errorMessage = ERRMSG_NONE;
+      DisplayArea infoMessage;
+      DisplayArea machineStatus;
+      DisplayArea feedRate;
+      DisplayArea spindleRPM;
+      DisplayArea feedOverride;
+      DisplayArea spindleOverride;
     };
 
 #endif
