@@ -367,88 +367,62 @@ void draw_dro_readout(machine_status_packet_t *previous_packet, machine_status_p
 
 void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 
+      //update the section on state changes
+      if(previous_packet->machine_state!=packet->machine_state){      
+        //clear the feedrate section and write text and set up the number
+        gfx.fillRect(areas.feedRate.x(), areas.feedRate.y(), areas.feedRate.w(), areas.feedRate.h(), BLACK );
+        feedrate_display.begin(&FreeMono9pt7b);
+        feedrate_display.setFormat(3,0);
+        //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
+        feedrate_display.setPosition(feedRateWidth-(feedrate_display.w()), areas.feedRate.y()+1);
+        gfx.setFont(&Arimo_Regular_12);
+      }
+  
   if (packet->machine_state == STATE_HOLD){
-    
     if(previous_packet->machine_state!=STATE_HOLD){
-      //clear the feedrate section and write HOLDING text
-      gfx.fillRect(areas.feedRate.x(), areas.feedRate.y(), areas.feedRate.w(), areas.feedRate.h(), BLACK );
-      gfx.setFont(&Arimo_Regular_12);
-      gfx.setCursor(areas.feedRate.x(), areas.feedRate.y()+areas.feedRate.h());
-      //gfx.setCursor(areas.axesCoords.x(), areas.axesCoords.y());
-
-      gfx.print("HOLDING");
+        gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), pausebutton, 20, 20);
     }
+    feedrate_display.draw(packet->feed_rate,0);
     return;
   }
   
   if(packet->machine_state == STATE_CYCLE){
     //if entering cycle mode, clear and redraw the text
     if(previous_packet->machine_state!=STATE_CYCLE){
-      //clear the feedrate section and write text and set up the number
-      gfx.fillRect(areas.feedRate.x(), areas.feedRate.y(), areas.feedRate.w(), areas.feedRate.h(), BLACK );
-      feedrate_display.setFont(&Arimo_Regular_12);
-      feedrate_display.setFormat(4,0);
-      //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
-      feedrate_display.setPosition(gfx.width()-feedrate_display.w(), areas.feedRate.y()+1);
-      //feedrate_display.begin();  
-      gfx.setFont(&Arimo_Regular_12);
-      gfx.setCursor(areas.feedRate.x(), areas.feedRate.y()+areas.feedRate.h());
-      //gfx.setCursor(areas.axesCoords.x(), areas.axesCoords.y());
-      gfx.print("RUN");
+      gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), playbutton, 20, 20);
     }
     feedrate_display.draw(packet->feed_rate,0);
     return;
   }
 
+  if((packet->machine_state == STATE_IDLE)){
+    //if entering cycle mode, clear and redraw the text
+    if(previous_packet->machine_state!=STATE_IDLE){
+      //select the jog icon based on the jog mode.
+      switch (current_jogmode.value) {
+        case FAST :
+            gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), hare, 20, 20);        
+          break;
+        case SLOW : 
+            gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), turtle, 20, 20);        
+          break;
+        case STEP : 
+            gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), onestep, 20, 20);        
+          break;
+        default :
+          gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), error_icon, 20, 20);
+        break; 
+          }//close jog states      
+    }
+    feedrate_display.draw(packet->jog_stepsize,0);
 
-#if 0
-  if (packet->jog_mode!=previous_packet->jog_mode || packet->jog_stepsize!=previous_packet->jog_stepsize ||
-      screenmode != previous_screenmode){
-    sprintf(charbuf, "        : %3.3f ", packet->jog_stepsize);
-    oledWriteString(&oled, 0,0,INFOLINE,charbuf, INFOFONT, 0, 1);
-    sprintf(charbuf, "        : %3.3f ", step_calc);
-    oledWriteString(&oled, 0,0,1,charbuf, INFOFONT, 0, 1);          
-    switch (current_jogmode) {
-      case FAST :
-      case SLOW : 
-        oledWriteString(&oled, 0,0,INFOLINE,(char *)"JOG FEED", INFOFONT, 0, 1); 
-        break;
-      case STEP : 
-        oledWriteString(&oled, 0,0,INFOLINE,(char *)"JOG STEP", INFOFONT, 0, 1);
-        break;
-      default :
-        oledWriteString(&oled, 0,0,INFOLINE,(char *)"ERROR ", INFOFONT, 0, 1);
-      break; 
-        }//close jog states
-  }
-#endif
+    return;
+  }  
 
   if(packet->machine_state == STATE_DISCONNECTED){
     //if entering cycle mode, clear and redraw the text
     if(previous_packet->machine_state!=STATE_DISCONNECTED){
-      //clear the feedrate section and write text and set up the number
-      gfx.fillRect(areas.feedRate.x(), areas.feedRate.y(), areas.feedRate.w(), areas.feedRate.h(), BLACK );
-      feedrate_display.begin(&FreeMono9pt7b);
-      feedrate_display.setFormat(3,0);
-      //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
-      feedrate_display.setPosition(feedRateWidth-(feedrate_display.w()), areas.feedRate.y()+1);
-      gfx.setFont(&Arimo_Regular_12);
-      //gfx.setCursor(areas.feedRate.x(), areas.feedRate.y()+areas.feedRate.h());
-      gfx.setCursor(areas.feedRate.x(), areas.feedRate.y()+20);
-      Coords_s icon = {areas.feedRate.x(), areas.feedRate.y()};
-      //gfx.print("FD");
       gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), disconnected, 20, 20);
-      gfx.drawRGBBitmap(20, 20, runperson, 20, 20);
-      gfx.drawRGBBitmap(40, 20, turtle, 20, 20);
-      gfx.drawRGBBitmap(60, 20, onestep, 20, 20);
-      gfx.drawRGBBitmap(80, 20, hare, 20, 20);
-      gfx.drawRGBBitmap(100, 20, rpm_icon, 20, 20);
-      gfx.drawRGBBitmap(0, 40, playbutton, 20, 20);
-      gfx.drawRGBBitmap(20, 40, pausebutton, 20, 20);
-      gfx.drawRGBBitmap(40, 40, stopbutton, 20, 20);
-      gfx.drawRGBBitmap(60, 40, driller, 20, 20);
-      gfx.drawRGBBitmap(80, 40, laser, 20, 20);
-      gfx.drawRGBBitmap(100, 40, power_icon, 20, 20);
     }
     feedrate_display.draw(packet->feed_rate,0);
     return;
@@ -633,7 +607,7 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
       default :
         draw_feedrate(previous_packet, packet);
         draw_machine_status(previous_packet, packet);
-        //draw_dro_readout(previous_packet, packet);
+        draw_dro_readout(previous_packet, packet);
         draw_overrides_rpm(previous_packet, packet);                     
       break; //close default case
     }//close machine_state switch statement
