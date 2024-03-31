@@ -45,10 +45,6 @@ uint8_t run_color[] = {0,255,0};
 int32_t feed_color[] = {0,10000,0};
 int32_t rpm_color[] = {0,10000,0};
 
-// define I2C addresses to be used for this peripheral
-static const uint I2C_SLAVE_ADDRESS = 0x49;
-static const uint I2C_BAUDRATE = 1000000; // 100 kHz
-
 void init_neopixels (void){
 
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)

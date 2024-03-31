@@ -11,9 +11,11 @@ SerialTransfer packetTransfer;
 
 char arr2[] = "HITHEE";
 
+float num = 0;
+
 static struct
 {
-    uint8_t mem[256];
+    uint8_t mem[1024];
     uint8_t mem_address;
     bool mem_address_written;
 } status_context;
@@ -25,7 +27,7 @@ machine_status_packet_t *previous_statuspacket = &prev_statuspacket;
 
 static struct
 {
-    uint8_t mem[256];
+    uint8_t mem[1024];
     uint8_t mem_address;
     bool mem_address_written;
 } count_context;
@@ -35,7 +37,7 @@ pendant_count_packet_t prev_countpacket = {};
 pendant_count_packet_t *countpacket = (pendant_count_packet_t*) count_context.mem;
 pendant_count_packet_t *previous_countpacket = &prev_countpacket;
 
-float num = 0;
+
 
 void transmit_data(void){
   // use this variable to keep track of how many
@@ -128,7 +130,7 @@ void loop() {
   readEncoders(); //read Encoders
 
   receive_data();
-  transmit_data();
+  //transmit_data();
 
   periodic_task();
 }

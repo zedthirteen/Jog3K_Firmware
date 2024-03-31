@@ -437,8 +437,10 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
       gfx.setCursor(areas.feedRate.x(), areas.feedRate.y()+20);
       Coords_s icon = {areas.feedRate.x(), areas.feedRate.y()};
       //gfx.print("FD");
-      drawIconPlay(icon, WHITE, feedRateHeight);
-      gfx.drawRGBBitmap(20, 20, runperson, 32, 32);
+      gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), disconnected, 20, 20);
+      gfx.drawRGBBitmap(20, 20, runperson, 20, 20);
+      gfx.drawRGBBitmap(40, 20, turtle, 20, 20);
+      gfx.drawRGBBitmap(60, 20, onestep, 20, 20);
     }
     feedrate_display.draw(packet->feed_rate,0);
     return;
