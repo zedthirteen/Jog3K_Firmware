@@ -441,6 +441,14 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
       gfx.drawRGBBitmap(20, 20, runperson, 20, 20);
       gfx.drawRGBBitmap(40, 20, turtle, 20, 20);
       gfx.drawRGBBitmap(60, 20, onestep, 20, 20);
+      gfx.drawRGBBitmap(80, 20, hare, 20, 20);
+      gfx.drawRGBBitmap(100, 20, rpm_icon, 20, 20);
+      gfx.drawRGBBitmap(0, 40, playbutton, 20, 20);
+      gfx.drawRGBBitmap(20, 40, pausebutton, 20, 20);
+      gfx.drawRGBBitmap(40, 40, stopbutton, 20, 20);
+      gfx.drawRGBBitmap(60, 40, driller, 20, 20);
+      gfx.drawRGBBitmap(80, 40, laser, 20, 20);
+      gfx.drawRGBBitmap(100, 40, power_icon, 20, 20);
     }
     feedrate_display.draw(packet->feed_rate,0);
     return;
