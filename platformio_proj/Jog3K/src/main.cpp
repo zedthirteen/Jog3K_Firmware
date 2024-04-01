@@ -9,6 +9,8 @@
 
 SerialTransfer packetTransfer;
 
+uint8_t simulation_mode;
+
 char arr2[] = "HITHEE";
 
 float num = 0;
@@ -90,6 +92,7 @@ void setup() {
   //Serial.println("Jog3K serial debug");
 
   previous_statuspacket->machine_state = MachineState_Other;
+  simulation_mode = 0;
 
 }
 

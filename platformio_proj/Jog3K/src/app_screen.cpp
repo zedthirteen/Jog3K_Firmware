@@ -91,9 +91,9 @@ const uint16_t displayHeight = 128;
 const uint8_t axesAreaHeight = 64; //All axis
 const uint8_t axesLabelWidth = 20; //All axis
 const uint8_t axesCoordWidth = 20;
-const uint8_t axesCoordHeight = 10;
-const uint8_t feedRateHeight = 20;
-const uint8_t feedRateWidth = 64;
+const uint8_t axesCoordHeight = 20;
+const uint8_t feedRateHeight = 21; //also used for rpm
+const uint8_t feedRateWidth = 64; //also used for rpm
 //const uint8_t encoderLabelAreaHeight = 6;
 //const uint8_t encoderValueAreaHeight[3] = {25, 13, 13}; //Single line, 1st line, 2nd line
 //const uint8_t encoderColumnWidth = 50; 
@@ -125,7 +125,7 @@ DisplayNumber axisPosition[4] = { DisplayNumber(gfx), DisplayNumber(gfx), Displa
 DisplayNumber feedrate_display = DisplayNumber(gfx);
 DisplayNumber rpm_display = DisplayNumber(gfx);
 DisplayNumber feed_over_display = DisplayNumber(gfx);
-DisplayNumber spindlee_over_display = DisplayNumber(gfx);
+DisplayNumber spindle_over_display = DisplayNumber(gfx);
 
 
 /**************************************************************************/
@@ -145,27 +145,15 @@ void lcdTestPattern(void)
 
   //set up display areas:
   areas.feedRate = DisplayArea(0,0,feedRateWidth,feedRateHeight);// Feed rate gets half of bar at top
-  areas.spindleRPM = DisplayArea(0,feedRateWidth,feedRateWidth,feedRateHeight);// RPM gets other half of width
+  areas.spindleRPM = DisplayArea(feedRateWidth,0,feedRateWidth,feedRateHeight);// RPM gets other half of width
   areas.axes = DisplayArea(0, feedRateHeight, displayWidth, axesAreaHeight);  //DRO under feed.
   //areas.axesMarkers = DisplayArea(0, 0, 19, axesAreaHeight);
   areas.axesLabels = DisplayArea(0, feedRateHeight, axesLabelWidth, axesAreaHeight); //Axes labels down the side
   areas.axesCoords = DisplayArea(0, axesAreaHeight+feedRateHeight, axesCoordWidth, axesCoordHeight); //Current coordinate system under axes
   areas.infoMessage = DisplayArea(0,120,displayWidth,displayHeight-120); //info message along the bottom
   areas.machineStatus = DisplayArea(axesCoordWidth, axesAreaHeight + feedRateHeight, displayWidth - axesCoordWidth, axesCoordHeight); //status beside coordinates
-  areas.feedOverride= DisplayArea(0,axesAreaHeight+axesCoordHeight+20,64,feedRateHeight);// Feed over gets half of width
-  areas.spindleOverride= DisplayArea(64,axesAreaHeight+axesCoordHeight+20,64,feedRateHeight);// spindle over gets other half of width
-  //areas.encoderLabel[0] = DisplayArea(0, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
-  //areas.encoderLabel[1] = DisplayArea(encoderColumnWidth + 1, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
-  //areas.encoderLabel[2] = DisplayArea((encoderColumnWidth * 2) + 2, axesAreaHeight, encoderColumnWidth, encoderLabelAreaHeight);
-  //areas.encoderValue[0] = DisplayArea(0, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
-  //areas.encoderValue[1] = DisplayArea(encoderColumnWidth + 1, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
-  //areas.encoderValue[2] = DisplayArea((encoderColumnWidth * 2) + 2, axesAreaHeight + encoderLabelAreaHeight, encoderColumnWidth, encoderValueAreaHeight[0] );
-
-  //areas.buttonLabels[0] = DisplayArea( 0, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
-  //areas.buttonLabels[1] = DisplayArea( buttonColumnWidth + 1, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
-  //areas.buttonLabels[2] = DisplayArea( (buttonColumnWidth * 2) + 2, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
-  //areas.buttonLabels[3] = DisplayArea( (buttonColumnWidth * 3) + 3, areas.encoderValue[0].b() + 1, buttonColumnWidth, displayHeight - areas.encoderValue[0].b() - 1);
-  //areas.buttonLabels[4] = DisplayArea( (buttonColumnWidth * 4) + 4, areas.encoderValue[0].b() + 1, buttonColumnWidth + 1, displayHeight - areas.encoderValue[0].b() - 1);
+  areas.feedOverride= DisplayArea(axesCoordWidth,axesAreaHeight+feedRateHeight,(128-axesCoordWidth)/2,feedRateHeight);// Feed over gets half of width
+  areas.spindleOverride= DisplayArea(axesCoordWidth+((128-axesCoordWidth)/2),axesAreaHeight+feedRateHeight,(128-axesCoordWidth)/2,feedRateHeight);// spindle over gets other half of width
 
   areas.debugRow = DisplayArea(0, axesAreaHeight, displayWidth, displayHeight - axesAreaHeight);
 }
@@ -221,41 +209,6 @@ static char *map_coord_system (coord_system_id_t id)
     }
 
     return buf;
-}
-
-static void drawIconPlay(Coords_s cp, uint16_t c/*=WHITE*/, uint8_t h/*=26*/) {
-    uint8_t w = h / 1.5;
-    gfx.fillTriangle(
-      cp.x-(w/2)+3, cp.y-(0),
-      cp.x+(w/2)+3, cp.y+(h/2),
-      cp.x-(w/2)+3, cp.y+(h),
-      c
-    );
-}
-
-static void drawPulse(Coords_s cp, uint8_t r, int c/*=WHITE*/) {
-  gfx.fillCircle(cp.x+r, cp.y+r, r, c);
-  gfx.fillCircle(cp.x+(r*3), cp.y+r, r, c);
-  gfx.fillTriangle(cp.x, cp.y+r+1,
-                   cp.x+(r*4), cp.y+r+1, 
-                   cp.x+(r*2), cp.y+(r*3.5), 
-                   c);
-}
-
-static void drawIconOneStep(Coords_s cp, uint16_t c/*=WHITE*/) {
-    uint16_t x = cp.x;
-    uint8_t y = cp.y;
-    uint8_t s = 4; //step size
-    gfx.setFont(NULL);
-    gfx.setTextColor(c);
-    gfx.setCursor(x - 1, cp.y+3);
-    gfx.print("1");
-    for ( uint8_t i = 0; i < 2; (i++) ) {
-      gfx.drawLine(x + (s * i), y + (s * i), x + (s * i) + s, y + (s * i), c);
-      gfx.drawLine(x + (s * i) + s, y + (s * i), x + (s * i) + s, y + (s * i) + s, c);
-    }
-    gfx.setTextColor(WHITE);
-    gfx.setFont(NULL);
 }
 
 void setNumDrawnAxes(uint8_t num) {
@@ -396,7 +349,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
   }
 
   if((packet->machine_state == STATE_IDLE)){
-    //if entering cycle mode, clear and redraw the text
+    //if entering cycle mode, clear and redraw the icon
     if(previous_packet->machine_state!=STATE_IDLE){
       //select the jog icon based on the jog mode.
       switch (current_jogmode.value) {
@@ -434,27 +387,29 @@ static void draw_machine_status(machine_status_packet_t *previous_packet, machin
 
  gfx.setCursor(0, 100);
  gfx.setTextColor(WHITE);  
- gfx.setTextSize(1);
- gfx.println("Disconnected");
+ gfx.setTextSize(1); 
 
-
-
-#if SCREEN_ENABLED
-  char charbuf[32];
-
-  oledWriteString(&oled, 0,94,4,(char *)" ", FONT_6x8, 0, 1);
   switch (packet->machine_state){
     case STATE_IDLE :
-    oledWriteString(&oled, 0,-1,-1,(char *)"IDLE", FONT_6x8, 0, 1); 
+    gfx.println("IDLE");
     break;
     case STATE_JOG :
-    oledWriteString(&oled, 0,-1,-1,(char *)"JOG ", FONT_6x8, 0, 1);
+    gfx.println("JOGGING");
     break;
     case STATE_TOOL_CHANGE :
-    oledWriteString(&oled, 0,-1,-1,(char *)"TOOL", FONT_6x8, 0, 1); 
-    break;                   
+    gfx.println("TOOL CHANGE");
+    break;
+    default:
+    gfx.println("Disconnected");
+    break;               
   }  
-#endif
+
+}
+
+static void draw_jog_mode(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
+
+  //This presents some kind of indication when the jog mode is between linear and rotational mode.  Future feature
+
 }
 
 static void draw_alt_screen(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
@@ -500,7 +455,83 @@ static void draw_alarm_screen(machine_status_packet_t *previous_packet, machine_
  gfx.println("Alarm Screen");
 }
 
-static void draw_overrides_rpm(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
+static void draw_rpm(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
+      //update the section on state changes
+  if(previous_packet->machine_state!=packet->machine_state){      
+    //clear the feedrate section and write text and set up the number
+    gfx.fillRect(areas.spindleRPM.x(), areas.spindleRPM.y(), areas.spindleRPM.w(), areas.spindleRPM.h(), BLACK );
+    rpm_display.begin(&FreeMono9pt7b);
+    rpm_display.setFormat(3,0);
+    //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
+    rpm_display.setPosition(128-(rpm_display.w()), areas.spindleRPM.y()+1);
+    gfx.setFont(&Arimo_Regular_12);
+    switch (packet->machine_modes.mode){
+      case 0:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), driller, 20, 20);
+      break;
+      case 1:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), laser, 20, 20);
+      break;
+      default:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), error_icon, 20, 20);
+      break;
+    }
+  }
+
+  if(previous_packet->machine_modes.mode!=packet->machine_modes.mode){
+    switch (packet->machine_modes.mode){
+      case 0:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), driller, 20, 20);
+      break;
+      case 1:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), laser, 20, 20);
+      break;
+      default:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), error_icon, 20, 20);
+      break;
+    }
+  }
+  rpm_display.draw(packet->feed_rate,0);
+}
+
+static void draw_overrides(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
+
+        //update the section on state changes
+  if(previous_packet->machine_state!=packet->machine_state){      
+    //clear the override section and write text and set up the numbers
+    gfx.fillRect(areas.spindleRPM.x(), areas.spindleRPM.y(), areas.spindleRPM.w(), areas.spindleRPM.h(), BLACK );
+    rpm_display.begin(&FreeMono9pt7b);
+    rpm_display.setFormat(3,0);
+    //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
+    rpm_display.setPosition(128-(rpm_display.w()), areas.spindleRPM.y()+1);
+    gfx.setFont(&Arimo_Regular_12);
+    switch (packet->machine_modes.mode){
+      case 0:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), driller, 20, 20);
+      break;
+      case 1:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), laser, 20, 20);
+      break;
+      default:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), error_icon, 20, 20);
+      break;
+    }
+  }
+
+  if(previous_packet->machine_modes.mode!=packet->machine_modes.mode){
+    switch (packet->machine_modes.mode){
+      case 0:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), driller, 20, 20);
+      break;
+      case 1:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), laser, 20, 20);
+      break;
+      default:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), error_icon, 20, 20);
+      break;
+    }
+  }
+  rpm_display.draw(packet->feed_rate,0);
 #if SCREEN_ENABLED
   char charbuf[32];
 
@@ -573,25 +604,25 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
       case STATE_JOG : //jogging is allowed       
       case STATE_IDLE : //jogging is allowed
         draw_feedrate(previous_packet, packet);
-        draw_machine_status(previous_packet, packet);
+        //draw_machine_status(previous_packet, packet);
         draw_dro_readout(previous_packet, packet);
-        draw_overrides_rpm(previous_packet, packet);        
+        draw_rpm(previous_packet, packet);        
       break;//close idle state
 
       case STATE_CYCLE :
         //can still adjust overrides during hold
         //no jog during hold, show feed rate.
         draw_feedrate(previous_packet, packet);
-        draw_machine_status(previous_packet, packet);
+        //draw_machine_status(previous_packet, packet);
         draw_dro_readout(previous_packet, packet);
-        draw_overrides_rpm(previous_packet, packet);   
+        draw_rpm(previous_packet, packet);   
       break; //close cycle case        
 
       case STATE_HOLD :
         draw_feedrate(previous_packet, packet);
-        draw_machine_status(previous_packet, packet);
+        //draw_machine_status(previous_packet, packet);
         draw_dro_readout(previous_packet, packet);
-        draw_overrides_rpm(previous_packet, packet);                 
+        draw_rpm(previous_packet, packet);                 
       break; //close hold case
 
       case STATE_TOOL_CHANGE :
@@ -599,16 +630,17 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
         //cannot adjust overrides during tool change
         //jogging allowed during tool change
         draw_feedrate(previous_packet, packet);
-        draw_machine_status(previous_packet, packet);
+        //draw_machine_status(previous_packet, packet);
         draw_dro_readout(previous_packet, packet);
-        draw_overrides_rpm(previous_packet, packet);      
+        draw_rpm(previous_packet, packet);      
       break; //close tool case     
 
       default :
         draw_feedrate(previous_packet, packet);
-        draw_machine_status(previous_packet, packet);
+        //draw_machine_status(previous_packet, packet);
+        draw_jog_mode(previous_packet, packet);
         draw_dro_readout(previous_packet, packet);
-        draw_overrides_rpm(previous_packet, packet);                     
+        draw_rpm(previous_packet, packet);                     
       break; //close default case
     }//close machine_state switch statement
   }//close screen mode switch statement

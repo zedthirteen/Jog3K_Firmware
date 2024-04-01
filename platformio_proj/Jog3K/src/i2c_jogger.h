@@ -117,6 +117,8 @@ extern const uint8_t *flash_target_contents;
 // sequentially from the current memory address.
 #define I2C_TIMEOUT_VALUE 100
 
+extern uint8_t simulation_mode;
+
 typedef enum {
     CoordinateSystem_G54 = 0,                       //!< 0 - G54 (G12)
     CoordinateSystem_G55,                           //!< 1 - G55 (G12)
