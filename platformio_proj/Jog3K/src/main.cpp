@@ -121,6 +121,9 @@ void receive_data(void){
       statuspacket->coordinate.z = num * 10;
       statuspacket->coordinate.a = num * 3;
       statuspacket->feed_rate = num * 100;
+      statuspacket->spindle_rpm = num * 200;
+      statuspacket->feed_override = num;
+      statuspacket->spindle_override = num+2;
       num += 0.1;
   }
 }

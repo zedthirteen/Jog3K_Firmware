@@ -327,7 +327,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
         feedrate_display.begin(&FreeMono9pt7b);
         feedrate_display.setFormat(3,0);
         //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
-        feedrate_display.setPosition(feedRateWidth-(feedrate_display.w()), areas.feedRate.y()+1);
+        feedrate_display.setPosition((feedRateWidth-(feedrate_display.w())) -3, areas.feedRate.y()+1);
         gfx.setFont(&Arimo_Regular_12);
       }
   
@@ -464,41 +464,30 @@ static void draw_alarm_screen(machine_status_packet_t *previous_packet, machine_
 
 static void draw_rpm(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
       //update the section on state changes
+  
   if(previous_packet->machine_state!=packet->machine_state){      
     //clear the feedrate section and write text and set up the number
     gfx.fillRect(areas.spindleRPM.x(), areas.spindleRPM.y(), areas.spindleRPM.w(), areas.spindleRPM.h(), BLACK );
     rpm_display.begin(&FreeMono9pt7b);
     rpm_display.setFormat(3,0);
-    //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
-    rpm_display.setPosition(128-(rpm_display.w()), areas.spindleRPM.y()+1);
     gfx.setFont(&Arimo_Regular_12);
+    //if(packet->spindle_rpm <= 9999)
+    //  rpm_display.setPosition(128-(rpm_display.w()+10), areas.spindleRPM.y()+1);
+    //else
+      rpm_display.setPosition(128-(rpm_display.w()), areas.spindleRPM.y()+1);
     switch (packet->machine_modes.mode){
       case 0:
-        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), driller, 20, 20);
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y()-3, rpm_icon, 20, 20);
       break;
       case 1:
-        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), laser, 20, 20);
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), power_icon, 20, 20);
       break;
       default:
         gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), error_icon, 20, 20);
       break;
     }
   }
-
-  if(previous_packet->machine_modes.mode!=packet->machine_modes.mode){
-    switch (packet->machine_modes.mode){
-      case 0:
-        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), driller, 20, 20);
-      break;
-      case 1:
-        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), laser, 20, 20);
-      break;
-      default:
-        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), error_icon, 20, 20);
-      break;
-    }
-  }
-  rpm_display.draw(packet->feed_rate,0);
+  rpm_display.draw(packet->spindle_rpm,1);
 }
 
 static void draw_overrides(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
@@ -544,8 +533,8 @@ static void draw_overrides(machine_status_packet_t *previous_packet, machine_sta
     }
   }
 
-  feed_over_display.draw(packet->feed_rate,0);
-  spindle_over_display.draw(packet->feed_rate,0);
+  feed_over_display.draw(packet->feed_override,0);
+  spindle_over_display.draw(packet->spindle_override,0);
 
 }
 
