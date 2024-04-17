@@ -152,8 +152,8 @@ void lcdTestPattern(void)
   areas.axesCoords = DisplayArea(0, axesAreaHeight+feedRateHeight, axesCoordWidth, axesCoordHeight); //Current coordinate system under axes
   areas.infoMessage = DisplayArea(0,120,displayWidth,displayHeight-120); //info message along the bottom
   areas.machineStatus = DisplayArea(axesCoordWidth, axesAreaHeight + feedRateHeight+5, displayWidth - axesCoordWidth, axesCoordHeight-5); //status beside coordinates
-  areas.feedOverride = DisplayArea(0,axesAreaHeight+feedRateHeight+axesCoordHeight,(128-axesCoordWidth)/2,feedRateHeight);// Feed over gets half of width
-  areas.spindleOverride= DisplayArea((128/2),axesAreaHeight+feedRateHeight+axesCoordHeight,(128-axesCoordWidth)/2,feedRateHeight);// spindle over gets other half of width
+  areas.feedOverride = DisplayArea(0,axesAreaHeight+feedRateHeight+axesCoordHeight+3,(128-axesCoordWidth)/2,feedRateHeight);// Feed over gets half of width
+  areas.spindleOverride= DisplayArea((128/2),axesAreaHeight+feedRateHeight+axesCoordHeight+3,(128-axesCoordWidth)/2,feedRateHeight);// spindle over gets other half of width
 
   areas.debugRow = DisplayArea(0, axesAreaHeight, displayWidth, displayHeight - axesAreaHeight);
 }
@@ -375,7 +375,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
   if(packet->machine_state == STATE_DISCONNECTED){
     //if entering cycle mode, clear and redraw the text
     if(previous_packet->machine_state!=STATE_DISCONNECTED){
-      gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), disconnected, 20, 20);
+      gfx.drawRGBBitmap(areas.feedRate.x()-3, areas.feedRate.y(), disconnected, 20, 20);
     }
     feedrate_display.draw(packet->feed_rate,0);
     return;
@@ -497,28 +497,20 @@ static void draw_overrides(machine_status_packet_t *previous_packet, machine_sta
     //clear the override section and write text and set up the numbers
     gfx.fillRect(areas.feedOverride.x(), areas.feedOverride.y(), areas.feedOverride.w(), areas.feedOverride.h(), BLACK );
     feed_over_display.begin(&FreeMono9pt7b);
-    feed_over_display.setFormat(3,0);
+    feed_over_display.setFormat(1,0);
     //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
-    feed_over_display.setPosition(128-(feed_over_display.w()), areas.feedOverride.y()+1);
+    feed_over_display.setPosition(areas.feedOverride.x()+27, areas.feedOverride.y()+3);
     gfx.setFont(&Arimo_Regular_12);
-    switch (packet->machine_modes.mode){
-      case 0:
-        gfx.drawRGBBitmap(areas.feedOverride.x(), areas.feedOverride.y(), driller, 20, 20);
-      break;
-      case 1:
-        gfx.drawRGBBitmap(areas.feedOverride.x(), areas.feedOverride.y(), laser, 20, 20);
-      break;
-      default:
-        gfx.drawRGBBitmap(areas.feedOverride.x(), areas.feedOverride.y(), error_icon, 20, 20);
-      break;
-    }  
+    gfx.drawRGBBitmap(areas.feedOverride.x(), areas.feedOverride.y(), runperson, 20, 20);
+
+      
 
     //clear the override section and write text and set up the numbers
     gfx.fillRect(areas.spindleOverride.x(), areas.spindleOverride.y(), areas.spindleOverride.w(), areas.spindleOverride.h(), BLACK );
     spindle_over_display.begin(&FreeMono9pt7b);
-    spindle_over_display.setFormat(3,0);
+    spindle_over_display.setFormat(1,0);
     //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
-    spindle_over_display.setPosition(128-(spindle_over_display.w()), areas.spindleOverride.y()+1);
+    spindle_over_display.setPosition(areas.spindleOverride.x()+25, areas.spindleOverride.y()+3);
     gfx.setFont(&Arimo_Regular_12);    
     switch (packet->machine_modes.mode){
       case 0:

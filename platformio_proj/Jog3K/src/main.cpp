@@ -98,7 +98,7 @@ void setup() {
 
 void receive_data(void){
 
-  const uint32_t interval_ms = 50;
+  const uint32_t interval_ms = 25;
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
 
@@ -123,7 +123,7 @@ void receive_data(void){
       statuspacket->feed_rate = num * 100;
       statuspacket->spindle_rpm = num * 200;
       statuspacket->feed_override = num;
-      statuspacket->spindle_override = num+2;
+      statuspacket->spindle_override = num+3;
       num += 0.1;
   }
 }
