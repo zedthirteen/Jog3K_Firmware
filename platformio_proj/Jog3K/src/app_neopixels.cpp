@@ -106,13 +106,13 @@ void update_neopixels(machine_status_packet_t *previous_packet, machine_status_p
 
   //preload jog LED colors depending on speed
   switch (current_jogmode.mode) {
-  case FAST :
+  case JOGMODE_FAST :
     jog_color[0] = 255; jog_color[1] = 0; jog_color[2] = 0; //RGB
     break;
-  case SLOW : 
+  case JOGMODE_SLOW : 
     jog_color[0] = 0; jog_color[1] = 255; jog_color[2] = 0; //RGB      
     break;
-  case STEP : 
+  case JOGMODE_STEP : 
     jog_color[0] = 0; jog_color[1] = 0; jog_color[2] = 255; //RGB      
     break;
   default :

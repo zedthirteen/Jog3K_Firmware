@@ -74,8 +74,6 @@ void setup() {
 
 }
 
-
-
 void transmit_data(void){
   // use this variable to keep track of how many
   // bytes we're stuffing in the transmit buffer
@@ -171,6 +169,13 @@ static void process_simulation_mode(void){
 
   statuspacket->feed_override = countpacket->feed_over;
   statuspacket->spindle_override = countpacket->spindle_over;
+
+  if(statuspacket->machine_state == MachineState_Disconnected)
+    statuspacket->machine_state = MachineState_Idle;
+
+  statuspacket->jog_mode = countpacket->jog_mode;  
+  //cacluate jog stepsize
+
 
   //buttons just set the state directly.  Jog buttons set jogging state.  Run, hold halt set their states (halt sets alarm) etc.
   //pressing alt-spindle sets tool change state.

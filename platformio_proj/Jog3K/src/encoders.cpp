@@ -74,9 +74,6 @@ if(QuadEncs>=4){
 
 void readEncoders(uint8_t function){
 
-    extern pendant_count_packet_t *countpacket;
-    extern CurrentJogAxis current_jog_axis;
-
     if(function == 1){
       for (uint8_t i = 0; i < QUADENCS; i++){
         prev_EncCount[i] = EncCount[i];
@@ -96,8 +93,16 @@ void readEncoders(uint8_t function){
     
     previous_jog_axis = current_jog_axis;
     current_jog_axis = (CurrentJogAxis)i;
-
     //adjust decimal with spindle override encoder
+    i = statuspacket->jog_mode.mode;
+
+    if (i>(JOGMODE_MAX))
+      i=0;
+    if(i<0)
+      i=(JOGMODE_MAX);
+
+    countpacket->jog_mode.mode=i;
+
     //adjust jogmode with feed override encoder
 
     } else if (function == 2){

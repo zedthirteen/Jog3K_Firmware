@@ -295,12 +295,12 @@ void setup_dro_readout(machine_status_packet_t *previous_packet, machine_status_
     gfx.setFont(&FreeMonoBold12pt7b);
   else
     gfx.setFont(&FreeMono9pt7b);
-  for (int i = 0; i<numaxes; i++){
+  for (int i = 0; i<numaxes; i++){      
     gfx.setTextColor(axisColour(i));
-    gfx.setCursor(areas.axesLabels.x(), (areas.axes.y() + (i * incr) + topMargin ));
+    gfx.setCursor(areas.axesLabels.x(), (areas.axes.y() + (i * incr) + topMargin ));     
     gfx.print(AXIS_NAME[i]);
-  }
-           
+    //add an icon (triangle) to the current jog axis
+  }           
 }
 
 void draw_dro_readout(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
@@ -405,13 +405,13 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
     if(previous_packet->machine_state!=STATE_IDLE || force_screen_update){
       //select the jog icon based on the jog mode.
       switch (current_jogmode.value) {
-        case FAST :
+        case JOGMODE_FAST :
             gfx.drawRGBBitmap(icon_x_location, icon_y_location, hare, 20, 20);        
           break;
-        case SLOW : 
+        case JOGMODE_SLOW : 
             gfx.drawRGBBitmap(icon_x_location, icon_y_location, turtle, 20, 20);        
           break;
-        case STEP : 
+        case JOGMODE_STEP : 
             gfx.drawRGBBitmap(icon_x_location, icon_y_location, onestep, 20, 20);        
           break;
         default :
@@ -624,9 +624,9 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
 
       case STATE_HOLD :
         draw_feedrate(previous_packet, packet);
+        draw_rpm(previous_packet, packet);
         draw_machine_status(previous_packet, packet);
-        draw_dro_readout(previous_packet, packet);
-        draw_rpm(previous_packet, packet);                 
+        draw_dro_readout(previous_packet, packet);               
       break; //close hold case
 
       case STATE_TOOL_CHANGE :
@@ -634,19 +634,19 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
         //cannot adjust overrides during tool change
         //jogging allowed during tool change
         draw_feedrate(previous_packet, packet);
+        draw_rpm(previous_packet, packet);
         draw_machine_status(previous_packet, packet);
-        draw_dro_readout(previous_packet, packet);
-        draw_rpm(previous_packet, packet);      
+        draw_dro_readout(previous_packet, packet);     
       break; //close tool case
 
       case STATE_JOG : //jogging is allowed       
       case STATE_IDLE : //jogging is allowed
       default :
         draw_feedrate(previous_packet, packet);
+        draw_rpm(previous_packet, packet);
         draw_machine_status(previous_packet, packet);
         draw_jog_mode(previous_packet, packet);
         draw_dro_readout(previous_packet, packet);
-        draw_rpm(previous_packet, packet);
         draw_overrides(previous_packet, packet);                    
       break; //close default case
     }//close machine_state switch statement

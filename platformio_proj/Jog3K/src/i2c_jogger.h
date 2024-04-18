@@ -166,10 +166,12 @@ enum machine_state_t {
 //static_assert(sizeof(machine_state_t) == 1, "machine_state_t too large for I2C display interface");
 //static_assert(sizeof(coord_system_id_t) == 1, "coord_system_id_t too large for I2C display interface");
 
-#define FAST 0
-#define SLOW 1
-#define STEP 2
-#define ROTATE 3
+#define JOGMODE_FAST 0
+#define JOGMODE_SLOW 1
+#define JOGMODE_STEP 2
+#define JOGMODE ROTATE 3
+#define JOGMODE_MAX 2
+
 
 typedef union {
     uint8_t value;
