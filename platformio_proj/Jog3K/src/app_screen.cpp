@@ -56,6 +56,7 @@
 #define MAGENTA         0xF81F
 #define YELLOW          0xFFE0  
 #define WHITE           0xFFFF
+#define ORANGE          0xFD00
 
 // Used for software SPI
 #define SCREEN_WIDTH  128
@@ -244,25 +245,18 @@ int axisColour(uint8_t axis) {
     return GREEN;
   }*/
 
+  //Serial1.println("currentaxis: ");
+  //Serial1.println(current_jog_axis);
+
   for(int i = 0; i < numaxes; i++)
   if (axis == i){
     if (current_jog_axis == axis){
-      if (screenmode == JOG_MODIFY){
-        return YELLOW;
-      } else{
-        return BLUE;
-      }      
+        return ORANGE;    
     } else{
-      return GREEN;
+      return BLUE;
     }
   }
 
-  /*if (axis == 1)
-    return GREEN;
-
-  if (axis == 2)
-    return GREEN;        
-*/
   return RED;
 }
 
@@ -317,17 +311,32 @@ void draw_dro_readout(machine_status_packet_t *previous_packet, machine_status_p
       packet->coordinate.y != previous_packet->coordinate.y || 
       packet->coordinate.z != previous_packet->coordinate.z || 
       packet->coordinate.a != previous_packet->coordinate.a ||
+      current_jog_axis != previous_jog_axis ||
       screenmode != previous_screenmode ||
       force_screen_update){
-    //if(true){      
-          if(screenmode != previous_screenmode  || force_screen_update){
-            setup_dro_readout(packet, previous_packet);
-          }
+    
+    if(screenmode != previous_screenmode ||
+        current_jog_axis != previous_jog_axis || 
+        force_screen_update){
+      setup_dro_readout(packet, previous_packet);
+    }
 
-          for( int axis = 0; axis < 3; axis++){
-              axisPosition[axis].draw(packet->coordinate.values[axis], axisColour(axis), false);
-          }
-  }
+    for( int axis = 0; axis < 3; axis++){
+        if (axis == current_jog_axis && screenmode == JOG_MODIFY){
+          axisPosition[axis].setBackgroundColour(axisColour(axis));
+          if(current_jog_axis != previous_jog_axis)
+            axisPosition[axis].draw(packet->coordinate.values[axis], 0, 1);
+          else
+            axisPosition[axis].draw(packet->coordinate.values[axis], 0, force_screen_update);
+          axisPosition[axis].setBackgroundColour(0);
+        } else {
+          if(current_jog_axis != previous_jog_axis)
+            axisPosition[axis].draw(packet->coordinate.values[axis], axisColour(axis), 1);
+          else
+            axisPosition[axis].draw(packet->coordinate.values[axis], axisColour(axis), force_screen_update);
+        }
+    }
+}
 }
 
 static void draw_rpm(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
@@ -355,7 +364,7 @@ static void draw_rpm(machine_status_packet_t *previous_packet, machine_status_pa
       break;
     }
   }
-  rpm_display.draw(packet->spindle_rpm,1);
+  rpm_display.draw(packet->spindle_rpm,force_screen_update);
 }
 
 void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
@@ -378,7 +387,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
     if(previous_packet->machine_state!=STATE_HOLD || force_screen_update){
         gfx.drawRGBBitmap(icon_x_location, icon_y_location, pausebutton, 20, 20);
     }
-    feedrate_display.draw(packet->feed_rate,0);
+    feedrate_display.draw(packet->feed_rate,force_screen_update);
     return;
   }
   
@@ -387,7 +396,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
     if(previous_packet->machine_state!=STATE_CYCLE || force_screen_update){
       gfx.drawRGBBitmap(icon_x_location, icon_y_location, playbutton, 20, 20);
     }
-    feedrate_display.draw(packet->feed_rate,0);
+    feedrate_display.draw(packet->feed_rate,force_screen_update);
     return;
   }
 
@@ -410,7 +419,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
         break; 
           }//close jog states      
     }
-    feedrate_display.draw(packet->jog_stepsize,0);
+    feedrate_display.draw(packet->jog_stepsize,force_screen_update);
     return;
   }  
 
@@ -421,7 +430,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
       gfx.drawRGBBitmap(icon_x_location-3, icon_y_location, disconnected, 20, 20);
       //gfx.drawRGBBitmap(icon_x_location, icon_y_location, playbutton, 20, 20);
     }
-    feedrate_display.draw(packet->feed_rate,0);
+    feedrate_display.draw(packet->feed_rate,force_screen_update);
     return;
   }
 
@@ -512,7 +521,7 @@ static void draw_alarm_screen(machine_status_packet_t *previous_packet, machine_
 static void draw_overrides(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 
   //update the section on state changes
-  if(previous_packet->machine_state!=packet->machine_state || previous_screenmode != screenmode){      
+  if(previous_packet->machine_state!=packet->machine_state || force_screen_update){      
     //clear the override section and write text and set up the numbers
     gfx.fillRect(areas.feedOverride.x(), areas.feedOverride.y(), areas.feedOverride.w(), areas.feedOverride.h(), BLACK );
     feed_over_display.begin(&FreeMono9pt7b);
@@ -544,8 +553,8 @@ static void draw_overrides(machine_status_packet_t *previous_packet, machine_sta
     }
   }
 
-  feed_over_display.draw(packet->feed_override,0);
-  spindle_over_display.draw(packet->spindle_override,0);
+  feed_over_display.draw(packet->feed_override,force_screen_update);
+  spindle_over_display.draw(packet->spindle_override,force_screen_update);
 
 }
 
@@ -595,7 +604,7 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
   case JOG_MODIFY:
   default:  
     if(previous_screenmode != screenmode){
-      gfx.fillScreen(0);
+      //gfx.fillScreen(0);
       force_screen_update = 1;
     }
 
@@ -643,7 +652,6 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
     }//close machine_state switch statement
   }//close screen mode switch statement
 #endif  
-  //prev_packet = *packet;
   previous_jogmode = current_jogmode;
   previous_screenmode = screenmode;
 

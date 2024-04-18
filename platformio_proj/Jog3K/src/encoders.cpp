@@ -78,8 +78,36 @@ void readEncoders(uint8_t function){
     extern CurrentJogAxis current_jog_axis;
 
     if(function == 1){
+      for (uint8_t i = 0; i < QUADENCS; i++){
+        prev_EncCount[i] = EncCount[i];
+      }
+
+      EncCount[0] = Encoder0.getCount()/QuadEncMp[0];
+      EncCount[1] = Encoder1.getCount()/QuadEncMp[1];
+      EncCount[2] = Encoder2.getCount()/QuadEncMp[2];           
+    //adjust current axis with main encoder
+    float i = current_jog_axis;
+    i = i + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+
+    if (i>(NUMBER_OF_AXES-1))
+      i=0;
+    if(i<0)
+      i=(NUMBER_OF_AXES-1);
+    
+    previous_jog_axis = current_jog_axis;
+    current_jog_axis = (CurrentJogAxis)i;
+
+    //adjust decimal with spindle override encoder
+    //adjust jogmode with feed override encoder
 
     } else if (function == 2){
+      for (uint8_t i = 0; i < QUADENCS; i++){
+        prev_EncCount[i] = EncCount[i];
+      }
+
+      EncCount[0] = Encoder0.getCount()/QuadEncMp[0];
+      EncCount[1] = Encoder1.getCount()/QuadEncMp[1];
+      EncCount[2] = Encoder2.getCount()/QuadEncMp[2];         
 
     } else {//function = 0
 
@@ -88,31 +116,9 @@ void readEncoders(uint8_t function){
         prev_EncCount[i] = EncCount[i];
       }
 
-      if(QuadEncs>=1){
-        #if QUADENCS >= 1
-          EncCount[0] = Encoder0.getCount()/QuadEncMp[0];
-        #endif
-      }
-      if(QuadEncs>=2){
-        #if QUADENCS >= 2
-          EncCount[1] = Encoder1.getCount()/QuadEncMp[1];
-        #endif
-      }
-      if(QuadEncs>=3){
-        #if QUADENCS >= 3
-          EncCount[2] = Encoder2.getCount()/QuadEncMp[2];
-        #endif
-      }
-      if(QuadEncs>=4){
-        #if QUADENCS >= 4
-          EncCount[3] = Encoder3.getCount()/QuadEncMp[3];
-        #endif
-      }
-      if(QuadEncs>=5){
-        #if QUADENCS >= 5
-          EncCount[4] = Encoder4.getCount()/QuadEncMp[4];
-        #endif
-      }
+      EncCount[0] = Encoder0.getCount()/QuadEncMp[0];
+      EncCount[1] = Encoder1.getCount()/QuadEncMp[1];
+      EncCount[2] = Encoder2.getCount()/QuadEncMp[2];
 
       switch(current_jog_axis){
         case X :
@@ -131,18 +137,8 @@ void readEncoders(uint8_t function){
           //something wrong, do nothing with the count.
         break;                        
       }
+
+      countpacket->feed_over = countpacket->feed_over + (EncCount[1]-prev_EncCount[1]);//increment the override by the delta count
+      countpacket->spindle_over = countpacket->spindle_over + (EncCount[2]-prev_EncCount[2]);//increment the override by the delta count
     }
-
-    countpacket->feed_over = countpacket->feed_over + (EncCount[1]-prev_EncCount[1]);//increment the override by the delta count
-    countpacket->spindle_over = countpacket->spindle_over + (EncCount[2]-prev_EncCount[2]);//increment the override by the delta count
-
-    #if 0
-    for ( int i = 0; i<QuadEncs; i++){
-      Serial1.print("encoder");
-      Serial1.println(i, DEC);
-      Serial1.print(": ");
-      Serial1.println(EncCount[i], DEC);
-    }
-    #endif
-
 }
