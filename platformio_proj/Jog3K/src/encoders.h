@@ -24,6 +24,6 @@
 extern long EncCount[QuadEncs];
 
 void init_encoders(void);
-void readEncoders (void);
+void readEncoders (uint8_t function);
 
 #endif

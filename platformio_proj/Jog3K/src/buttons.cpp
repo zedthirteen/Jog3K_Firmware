@@ -132,10 +132,10 @@ void init_buttons(void){
   gpio_set_pulls(SPINOVER_RESET,true,false);
 }
 
-void readButtons(void){
-
+void readButtons(){
+  extern pendant_count_packet_t *countpacket;
   buttons = 0;
-
+  
   if (!gpio_get(JOG_SELECT2) || !gpio_get(JOG_SELECT)){
     buttons           = ( buttons | (!gpio_get(HALTBUTTON) << (15) ) );
     buttons           = ( buttons | (!gpio_get(HOLDBUTTON) << (16) ) );
@@ -169,7 +169,8 @@ void readButtons(void){
     buttons           = ( buttons | (!gpio_get(LOWERBUTTON) << (14) ) );
   }
 
-  Serial1.println("Buttons: ");
-  Serial1.println(buttons, HEX);
+  countpacket->buttons = buttons;
+  //Serial1.println("Buttons: ");
+  //Serial1.println(buttons, HEX);
 
 }

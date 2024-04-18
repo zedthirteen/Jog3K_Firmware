@@ -6,6 +6,6 @@
 extern uint32_t buttons;
 
 void init_buttons (void);
-void readButtons (void);
+void readButtons ();
 
 #endif

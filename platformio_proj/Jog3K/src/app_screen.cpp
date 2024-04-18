@@ -82,7 +82,7 @@ jog_mode_t current_jogmode = {};
 enum ScreenMode screenmode = {};
 jog_mode_t previous_jogmode = {};
 ScreenMode previous_screenmode = {};
-int command_error = 0;
+static bool force_screen_update = 0;
 bool screenflip = false;
 float step_calc = 0;
 
@@ -229,6 +229,8 @@ void setNumDrawnAxes(uint8_t num) {
 }
 
 int axisColour(uint8_t axis) {
+  int numaxes = 3;
+  
   //need to modify this so that the axis color is set by homing status and also possibly the currently selected axis.
   
   /*if ( !state.homed[axis] ) {
@@ -242,16 +244,26 @@ int axisColour(uint8_t axis) {
     return GREEN;
   }*/
 
-  if (axis == 0)
-    return GREEN;
+  for(int i = 0; i < numaxes; i++)
+  if (axis == i){
+    if (current_jog_axis == axis){
+      if (screenmode == JOG_MODIFY){
+        return YELLOW;
+      } else{
+        return BLUE;
+      }      
+    } else{
+      return GREEN;
+    }
+  }
 
-  if (axis == 1)
+  /*if (axis == 1)
     return GREEN;
 
   if (axis == 2)
     return GREEN;        
-
-  return GREEN;
+*/
+  return RED;
 }
 
 void print_info_string(char *infostring){
@@ -305,9 +317,10 @@ void draw_dro_readout(machine_status_packet_t *previous_packet, machine_status_p
       packet->coordinate.y != previous_packet->coordinate.y || 
       packet->coordinate.z != previous_packet->coordinate.z || 
       packet->coordinate.a != previous_packet->coordinate.a ||
-      screenmode != previous_screenmode){
+      screenmode != previous_screenmode ||
+      force_screen_update){
     //if(true){      
-          if(screenmode != previous_screenmode){
+          if(screenmode != previous_screenmode  || force_screen_update){
             setup_dro_readout(packet, previous_packet);
           }
 
@@ -315,28 +328,54 @@ void draw_dro_readout(machine_status_packet_t *previous_packet, machine_status_p
               axisPosition[axis].draw(packet->coordinate.values[axis], axisColour(axis), false);
           }
   }
+}
 
-
+static void draw_rpm(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
+      //update the section on state changes
+  
+  if(previous_packet->machine_state!=packet->machine_state || force_screen_update){      
+    //clear the feedrate section and write text and set up the number
+    gfx.fillRect(areas.spindleRPM.x(), areas.spindleRPM.y(), areas.spindleRPM.w(), areas.spindleRPM.h(), BLACK );
+    rpm_display.begin(&FreeMono9pt7b);
+    rpm_display.setFormat(3,0);
+    gfx.setFont(&Arimo_Regular_12);
+    //if(packet->spindle_rpm <= 9999)
+    //  rpm_display.setPosition(128-(rpm_display.w()+10), areas.spindleRPM.y()+1);
+    //else
+      rpm_display.setPosition(128-(rpm_display.w()), areas.spindleRPM.y()+1);
+    switch (packet->machine_modes.mode){
+      case 0:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y()-3, rpm_icon, 20, 20);
+      break;
+      case 1:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), power_icon, 20, 20);
+      break;
+      default:
+        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), error_icon, 20, 20);
+      break;
+    }
+  }
+  rpm_display.draw(packet->spindle_rpm,1);
 }
 
 void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 
-      //update the section on state changes
-      if(previous_packet->machine_state!=packet->machine_state){      
-        //clear the feedrate section and write text and set up the number
-        gfx.fillRect(areas.feedRate.x(), areas.feedRate.y(), areas.feedRate.w(), areas.feedRate.h(), BLACK );
-        feedrate_display.begin(&FreeMono9pt7b);
-        feedrate_display.setFormat(3,0);
-        //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
-        feedrate_display.setPosition((feedRateWidth-(feedrate_display.w())), areas.feedRate.y()+1);
-        gfx.setFont(&Arimo_Regular_12);
-      }
+  //update the section on state changes
+  if(previous_packet->machine_state!=packet->machine_state || force_screen_update){      
+    //clear the feedrate section and write text and set up the number
+    gfx.fillRect(areas.feedRate.x(), areas.feedRate.y(), areas.feedRate.w(), areas.feedRate.h(), BLACK );
+    feedrate_display.begin(&FreeMono9pt7b);
+    feedrate_display.setFormat(3,0);
+    //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
+    feedrate_display.setPosition((feedRateWidth-(feedrate_display.w())), areas.feedRate.y()+1);
+    gfx.setFont(&Arimo_Regular_12);
+  }
 
   int16_t icon_x_location = areas.feedRate.x()-3;
   int16_t icon_y_location = areas.feedRate.y()-2;
   
   if (packet->machine_state == STATE_HOLD){
-    if(previous_packet->machine_state!=STATE_HOLD){
+    if(previous_packet->machine_state!=STATE_HOLD || force_screen_update){
         gfx.drawRGBBitmap(icon_x_location, icon_y_location, pausebutton, 20, 20);
     }
     feedrate_display.draw(packet->feed_rate,0);
@@ -345,7 +384,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
   
   if(packet->machine_state == STATE_CYCLE){
     //if entering cycle mode, clear and redraw the text
-    if(previous_packet->machine_state!=STATE_CYCLE){
+    if(previous_packet->machine_state!=STATE_CYCLE || force_screen_update){
       gfx.drawRGBBitmap(icon_x_location, icon_y_location, playbutton, 20, 20);
     }
     feedrate_display.draw(packet->feed_rate,0);
@@ -354,7 +393,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
 
   if((packet->machine_state == STATE_IDLE)){
     //if entering cycle mode, clear and redraw the icon
-    if(previous_packet->machine_state!=STATE_IDLE){
+    if(previous_packet->machine_state!=STATE_IDLE || force_screen_update){
       //select the jog icon based on the jog mode.
       switch (current_jogmode.value) {
         case FAST :
@@ -372,13 +411,12 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
           }//close jog states      
     }
     feedrate_display.draw(packet->jog_stepsize,0);
-
     return;
   }  
 
   if(packet->machine_state == STATE_DISCONNECTED){
     //if entering cycle mode, clear and redraw the text
-    if(previous_packet->machine_state!=STATE_DISCONNECTED){
+    if(previous_packet->machine_state!=STATE_DISCONNECTED  || force_screen_update){
       //note that disconnected icon needs to be offset in X by 3 pixels
       gfx.drawRGBBitmap(icon_x_location-3, icon_y_location, disconnected, 20, 20);
       //gfx.drawRGBBitmap(icon_x_location, icon_y_location, playbutton, 20, 20);
@@ -471,38 +509,10 @@ static void draw_alarm_screen(machine_status_packet_t *previous_packet, machine_
  gfx.println("Alarm Screen");
 }
 
-static void draw_rpm(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
-      //update the section on state changes
-  
-  if(previous_packet->machine_state!=packet->machine_state){      
-    //clear the feedrate section and write text and set up the number
-    gfx.fillRect(areas.spindleRPM.x(), areas.spindleRPM.y(), areas.spindleRPM.w(), areas.spindleRPM.h(), BLACK );
-    rpm_display.begin(&FreeMono9pt7b);
-    rpm_display.setFormat(3,0);
-    gfx.setFont(&Arimo_Regular_12);
-    //if(packet->spindle_rpm <= 9999)
-    //  rpm_display.setPosition(128-(rpm_display.w()+10), areas.spindleRPM.y()+1);
-    //else
-      rpm_display.setPosition(128-(rpm_display.w()), areas.spindleRPM.y()+1);
-    switch (packet->machine_modes.mode){
-      case 0:
-        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y()-3, rpm_icon, 20, 20);
-      break;
-      case 1:
-        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), power_icon, 20, 20);
-      break;
-      default:
-        gfx.drawRGBBitmap(areas.spindleRPM.x(), areas.spindleRPM.y(), error_icon, 20, 20);
-      break;
-    }
-  }
-  rpm_display.draw(packet->spindle_rpm,1);
-}
-
 static void draw_overrides(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 
   //update the section on state changes
-  if(previous_packet->machine_state!=packet->machine_state){      
+  if(previous_packet->machine_state!=packet->machine_state || previous_screenmode != screenmode){      
     //clear the override section and write text and set up the numbers
     gfx.fillRect(areas.feedOverride.x(), areas.feedOverride.y(), areas.feedOverride.w(), areas.feedOverride.h(), BLACK );
     feed_over_display.begin(&FreeMono9pt7b);
@@ -551,13 +561,14 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
   int x, y;
  
   switch (screenmode){
-  case JOG_MODIFY:
+  //maybe use this for 2nd jogmodify mode?
+  //case JOG_MODIFY:
   //put hints about alternate button functions here. 
-  if(screenmode != JOG_MODIFY){
-    gfx.fillScreen(0);
-    draw_alt_screen(previous_packet, packet);
-  }
-  break;
+  //if(screenmode != JOG_MODIFY){
+  //  gfx.fillScreen(0);
+  //  draw_alt_screen(previous_packet, packet);
+  //}
+  //break;
 
   //just small edits for most screens
 
@@ -581,9 +592,11 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
   case RUN:
   case HOLD:
   case TOOL_CHANGE:
+  case JOG_MODIFY:
   default:  
     if(previous_screenmode != screenmode){
       gfx.fillScreen(0);
+      force_screen_update = 1;
     }
 
     //if(packet->machine_state != previous_packet->machine_state)
@@ -633,4 +646,8 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
   //prev_packet = *packet;
   previous_jogmode = current_jogmode;
   previous_screenmode = screenmode;
+
+  if (force_screen_update)
+    force_screen_update = 0;
+
 }//close draw main screen

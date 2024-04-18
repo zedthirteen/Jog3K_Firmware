@@ -121,15 +121,49 @@ void receive_data(void){
   }
 }
 
-void loop() {
-
+void loop() {  
   //Serial1.write("read buttons\r\n");
-  readButtons(statuspacket); //read Inputs
-  //Serial1.write("read encoders\r\n");
-  readEncoders(statuspacket); //read Encoders
+  readButtons(); //read Inputs
 
-  //at this point need to check the buttons to see if alternate functions are activated.
-  activate_alt_functions();
+  //at this point need to check the see if alternate functions are activated.
+  if(!gpio_get(JOG_SELECT)){
+    //set the screenmode to reflect the SHIFT state
+    screenmode = JOG_MODIFY;
+    //change highlight around axis.  Change LED colors
+    //Serial1.write("update screen\r\n");
+    //draw_main_screen(previous_statuspacket, statuspacket, 1);
+    //Serial1.write("update pixels\r\n");
+    //update_neopixels(previous_statuspacket, statuspacket);
+
+    readEncoders(1); //read Encoders
+    //adjust current axis with main encoder
+    //adjust decimal with spindle override encoder
+    //adjust jogmode with feed override encoder
+  
+  }else if (!gpio_get(JOG_SELECT2)){
+      //in future would like to use this to directly adjust current feed rate and current spindle speed setting.
+      readEncoders(2); //read Encoders
+  } else{
+    //update the screenmode based on the reported machine state
+    switch (statuspacket->machine_state){
+      case MachineState_Alarm :
+        screenmode = ALARM;
+      break;
+      case MachineState_Homing :
+        screenmode = HOMING;
+      break;
+      default :
+        screenmode = none;
+      break;
+    }
+
+    //encoder counts should be updated
+    readEncoders(0); //read Encoders
+  }
+
+  //Serial1.write("read encoders\r\n");
+  
+
 
   receive_data();
   //transmit_data();
@@ -140,9 +174,17 @@ void loop() {
 static void activate_alt_functions(void){
   //Check the buttons to see if alternate function modes need to be set.
   if(!gpio_get(JOG_SELECT2)){
+    //set the screenmode to reflect the SHIFT state
+      //change highlight around axis.  Change LED colors
+
+    //adjust current axis with main encoder
+
+    //adjust decimal with spindle override encoder
+
+    //adjust jogmode with feed override encoder
   
   }else if (!gpio_get(JOG_SELECT)){
-    
+      //in future would like to use this to directly adjust current feed rate and current spindle speed setting.
   }
 
 }
@@ -156,5 +198,8 @@ static void process_simulation_mode(void){
 
   statuspacket->feed_override = countpacket->feed_over;
   statuspacket->spindle_override = countpacket->spindle_over;
+
+  //buttons just set the state directly.  Jog buttons set jogging state.  Run, hold halt set their states (halt sets alarm) etc.
+  //pressing alt-spindle sets tool change state.
 
 }

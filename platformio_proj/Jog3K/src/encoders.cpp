@@ -72,58 +72,65 @@ if(QuadEncs>=4){
 #endif
 }
 
-void readEncoders(){
+void readEncoders(uint8_t function){
 
     extern pendant_count_packet_t *countpacket;
     extern CurrentJogAxis current_jog_axis;
 
-    //start by copying the data to the old count for operations that only check the delta
-    for (uint8_t i = 0; i < QUADENCS; i++){
-      prev_EncCount[i] = EncCount[i];
-    }
+    if(function == 1){
 
-    if(QuadEncs>=1){
-      #if QUADENCS >= 1
-        EncCount[0] = Encoder0.getCount()/QuadEncMp[0];
-      #endif
-    }
-    if(QuadEncs>=2){
-      #if QUADENCS >= 2
-        EncCount[1] = Encoder1.getCount()/QuadEncMp[1];
-      #endif
-    }
-    if(QuadEncs>=3){
-      #if QUADENCS >= 3
-        EncCount[2] = Encoder2.getCount()/QuadEncMp[2];
-      #endif
-    }
-    if(QuadEncs>=4){
-      #if QUADENCS >= 4
-        EncCount[3] = Encoder3.getCount()/QuadEncMp[3];
-      #endif
-    }
-    if(QuadEncs>=5){
-      #if QUADENCS >= 5
-        EncCount[4] = Encoder4.getCount()/QuadEncMp[4];
-      #endif
-    }
+    } else if (function == 2){
 
-    switch(current_jog_axis){
-      case X :
-        countpacket->x_axis = countpacket->x_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
-      break;
-      case Y :
-        countpacket->y_axis = countpacket->y_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
-      break;
-      case Z :
-        countpacket->z_axis = countpacket->z_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
-      break;
-      case A :
-        countpacket->a_axis = countpacket->a_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
-      break;
-      default :
-        //something wrong, do nothing with the count.
-      break;                        
+    } else {//function = 0
+
+      //start by copying the data to the old count for operations that only check the delta
+      for (uint8_t i = 0; i < QUADENCS; i++){
+        prev_EncCount[i] = EncCount[i];
+      }
+
+      if(QuadEncs>=1){
+        #if QUADENCS >= 1
+          EncCount[0] = Encoder0.getCount()/QuadEncMp[0];
+        #endif
+      }
+      if(QuadEncs>=2){
+        #if QUADENCS >= 2
+          EncCount[1] = Encoder1.getCount()/QuadEncMp[1];
+        #endif
+      }
+      if(QuadEncs>=3){
+        #if QUADENCS >= 3
+          EncCount[2] = Encoder2.getCount()/QuadEncMp[2];
+        #endif
+      }
+      if(QuadEncs>=4){
+        #if QUADENCS >= 4
+          EncCount[3] = Encoder3.getCount()/QuadEncMp[3];
+        #endif
+      }
+      if(QuadEncs>=5){
+        #if QUADENCS >= 5
+          EncCount[4] = Encoder4.getCount()/QuadEncMp[4];
+        #endif
+      }
+
+      switch(current_jog_axis){
+        case X :
+          countpacket->x_axis = countpacket->x_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+        break;
+        case Y :
+          countpacket->y_axis = countpacket->y_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+        break;
+        case Z :
+          countpacket->z_axis = countpacket->z_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+        break;
+        case A :
+          countpacket->a_axis = countpacket->a_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+        break;
+        default :
+          //something wrong, do nothing with the count.
+        break;                        
+      }
     }
 
     countpacket->feed_over = countpacket->feed_over + (EncCount[1]-prev_EncCount[1]);//increment the override by the delta count

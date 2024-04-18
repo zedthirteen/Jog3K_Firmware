@@ -167,6 +167,7 @@ enum machine_state_t {
 #define FAST 0
 #define SLOW 1
 #define STEP 2
+#define ROTATE 3
 
 typedef union {
     uint8_t value;
@@ -382,16 +383,17 @@ typedef struct {
 
 typedef struct {
 int32_t uptime;
-uint16_t feed_over;
-uint16_t spindle_over;
-uint16_t rapid_over;
+jog_mode_t jog_mode;
+int32_t feed_over;
+int32_t spindle_over;
+int32_t rapid_over;
 uint32_t buttons;
-int32_t feedrate; //not currently used
-int32_t spindle_rpm; //not currently used
-int32_t x_axis;
-int32_t y_axis;
-int32_t z_axis;
-int32_t a_axis;
+float feedrate; //not currently used
+float spindle_rpm; //not currently used
+float x_axis;
+float y_axis;
+float z_axis;
+float a_axis;
 } pendant_count_packet_t;
 
 typedef struct
