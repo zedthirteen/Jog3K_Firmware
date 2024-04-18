@@ -92,8 +92,9 @@ const uint8_t axesAreaHeight = 50; //All axis
 const uint8_t axesLabelWidth = 20; //All axis
 const uint8_t axesCoordWidth = 50;
 const uint8_t axesCoordHeight = 20;
-const uint8_t feedRateHeight = 21; //also used for rpm
-const uint8_t feedRateWidth = 64; //also used for rpm
+const uint8_t feedRateHeight = 20; //also used for rpm
+const uint8_t feedRateWidth = 60; //also used for rpm
+const uint8_t dro_gap = 4;
 //const uint8_t encoderLabelAreaHeight = 6;
 //const uint8_t encoderValueAreaHeight[3] = {25, 13, 13}; //Single line, 1st line, 2nd line
 //const uint8_t encoderColumnWidth = 50; 
@@ -145,15 +146,15 @@ void lcdTestPattern(void)
 
   //set up display areas:
   areas.feedRate = DisplayArea(0,0,feedRateWidth,feedRateHeight);// Feed rate gets half of bar at top
-  areas.spindleRPM = DisplayArea(feedRateWidth,0,feedRateWidth,feedRateHeight);// RPM gets other half of width
-  areas.axes = DisplayArea(0, feedRateHeight, displayWidth, axesAreaHeight);  //DRO under feed.
+  areas.spindleRPM = DisplayArea(feedRateWidth+4,0,feedRateWidth,feedRateHeight);// RPM gets other half of width
+  areas.axes = DisplayArea(0, feedRateHeight+dro_gap, displayWidth, axesAreaHeight);  //DRO under feed.
   //areas.axesMarkers = DisplayArea(0, 0, 19, axesAreaHeight);
-  areas.axesLabels = DisplayArea(0, feedRateHeight, axesLabelWidth, axesAreaHeight); //Axes labels down the side
-  areas.axesCoords = DisplayArea(0, axesAreaHeight+feedRateHeight, axesCoordWidth, axesCoordHeight); //Current coordinate system under axes
-  areas.infoMessage = DisplayArea(0,120,displayWidth,displayHeight-120); //info message along the bottom
-  areas.machineStatus = DisplayArea(axesCoordWidth, axesAreaHeight + feedRateHeight+5, displayWidth - axesCoordWidth, axesCoordHeight-5); //status beside coordinates
-  areas.feedOverride = DisplayArea(0,axesAreaHeight+feedRateHeight+axesCoordHeight+3,(128-axesCoordWidth)/2,feedRateHeight);// Feed over gets half of width
-  areas.spindleOverride= DisplayArea((128/2),axesAreaHeight+feedRateHeight+axesCoordHeight+3,(128-axesCoordWidth)/2,feedRateHeight);// spindle over gets other half of width
+  areas.axesLabels = DisplayArea(0, feedRateHeight+dro_gap, axesLabelWidth, axesAreaHeight); //Axes labels down the side
+  areas.axesCoords = DisplayArea(0, axesAreaHeight+feedRateHeight+dro_gap, axesCoordWidth, axesCoordHeight); //Current coordinate system under axes
+  areas.infoMessage = DisplayArea(0,128,displayWidth,displayHeight-120); //info message along the bottom
+  areas.machineStatus = DisplayArea(axesCoordWidth, axesAreaHeight + feedRateHeight+10, displayWidth - axesCoordWidth, axesCoordHeight-5); //status beside coordinates
+  areas.feedOverride = DisplayArea(0,axesAreaHeight+feedRateHeight+axesCoordHeight+(2*dro_gap),(128-axesCoordWidth)/2,feedRateHeight);// Feed over gets half of width
+  areas.spindleOverride= DisplayArea((128/2)+20,axesAreaHeight+feedRateHeight+axesCoordHeight+(2*dro_gap),(128-axesCoordWidth)/2,feedRateHeight);// spindle over gets other half of width
 
   areas.debugRow = DisplayArea(0, axesAreaHeight, displayWidth, displayHeight - axesAreaHeight);
 }
@@ -242,15 +243,15 @@ int axisColour(uint8_t axis) {
   }*/
 
   if (axis == 0)
-    return WHITE;
+    return GREEN;
 
   if (axis == 1)
-    return BLUE;
+    return GREEN;
 
   if (axis == 2)
     return GREEN;        
 
-  return WHITE;
+  return GREEN;
 }
 
 void print_info_string(char *infostring){
@@ -327,13 +328,16 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
         feedrate_display.begin(&FreeMono9pt7b);
         feedrate_display.setFormat(3,0);
         //feedrate_display.setPosition(areas.feedRate.x()+20,areas.feedRate.y());
-        feedrate_display.setPosition((feedRateWidth-(feedrate_display.w())) -3, areas.feedRate.y()+1);
+        feedrate_display.setPosition((feedRateWidth-(feedrate_display.w())), areas.feedRate.y()+1);
         gfx.setFont(&Arimo_Regular_12);
       }
+
+  int16_t icon_x_location = areas.feedRate.x()-3;
+  int16_t icon_y_location = areas.feedRate.y()-2;
   
   if (packet->machine_state == STATE_HOLD){
     if(previous_packet->machine_state!=STATE_HOLD){
-        gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), pausebutton, 20, 20);
+        gfx.drawRGBBitmap(icon_x_location, icon_y_location, pausebutton, 20, 20);
     }
     feedrate_display.draw(packet->feed_rate,0);
     return;
@@ -342,7 +346,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
   if(packet->machine_state == STATE_CYCLE){
     //if entering cycle mode, clear and redraw the text
     if(previous_packet->machine_state!=STATE_CYCLE){
-      gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), playbutton, 20, 20);
+      gfx.drawRGBBitmap(icon_x_location, icon_y_location, playbutton, 20, 20);
     }
     feedrate_display.draw(packet->feed_rate,0);
     return;
@@ -354,16 +358,16 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
       //select the jog icon based on the jog mode.
       switch (current_jogmode.value) {
         case FAST :
-            gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), hare, 20, 20);        
+            gfx.drawRGBBitmap(icon_x_location, icon_y_location, hare, 20, 20);        
           break;
         case SLOW : 
-            gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), turtle, 20, 20);        
+            gfx.drawRGBBitmap(icon_x_location, icon_y_location, turtle, 20, 20);        
           break;
         case STEP : 
-            gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), onestep, 20, 20);        
+            gfx.drawRGBBitmap(icon_x_location, icon_y_location, onestep, 20, 20);        
           break;
         default :
-          gfx.drawRGBBitmap(areas.feedRate.x(), areas.feedRate.y(), error_icon, 20, 20);
+          gfx.drawRGBBitmap(icon_x_location, icon_y_location, error_icon, 20, 20);
         break; 
           }//close jog states      
     }
@@ -375,7 +379,9 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
   if(packet->machine_state == STATE_DISCONNECTED){
     //if entering cycle mode, clear and redraw the text
     if(previous_packet->machine_state!=STATE_DISCONNECTED){
-      gfx.drawRGBBitmap(areas.feedRate.x()-3, areas.feedRate.y(), disconnected, 20, 20);
+      //note that disconnected icon needs to be offset in X by 3 pixels
+      gfx.drawRGBBitmap(icon_x_location-3, icon_y_location, disconnected, 20, 20);
+      //gfx.drawRGBBitmap(icon_x_location, icon_y_location, playbutton, 20, 20);
     }
     feedrate_display.draw(packet->feed_rate,0);
     return;
@@ -407,7 +413,10 @@ static void draw_machine_status(machine_status_packet_t *previous_packet, machin
       gfx.println("RUN CYCLE");
       break;      
       default:
-      gfx.println("Disconnected");
+      if (simulation_mode)
+        gfx.println("Simulation");
+      else
+        gfx.println("Disconnected");
       break;               
     }
   }

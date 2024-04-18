@@ -322,7 +322,7 @@ public:
      display a leading zero).
   */
   void setFormat(uint8_t size = 3, uint8_t precision = 3) {
-    size = max(min(size, 15), 2);
+    size = max(min(size, 15), 1);
     precision = max(min(precision, (size - 1)), 0);
     if (this->numDigits != size || this->precision != precision) {
       this->numDigits = size;

@@ -27,15 +27,6 @@
 //extern const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 extern const uint8_t *flash_target_contents;
 
-#define STATE_DISCONNECTED  0
-#define STATE_ALARM         1 //!< In alarm state. Locks out all g-code processes. Allows settings access.
-#define STATE_CYCLE         2 //!< Cycle is running or motions are being executed.
-#define STATE_HOLD          3 //!< Active feed hold
-#define STATE_TOOL_CHANGE   4 //!< Manual tool change, similar to #STATE_HOLD - but stops spindle and allows jogging.
-#define STATE_IDLE          5 //!< Must be zero. No flags.
-#define STATE_HOMING        6 //!< Performing homing cycle
-#define STATE_JOG           7 //!< Jogging mode.
-
 //neopixel led locations
 #define RAISELED 0
 #define JOGLED 1
@@ -117,8 +108,6 @@ extern const uint8_t *flash_target_contents;
 // sequentially from the current memory address.
 #define I2C_TIMEOUT_VALUE 100
 
-extern uint8_t simulation_mode;
-
 typedef enum {
     CoordinateSystem_G54 = 0,                       //!< 0 - G54 (G12)
     CoordinateSystem_G55,                           //!< 1 - G55 (G12)
@@ -150,7 +139,17 @@ enum msg_type_t {
     MachineMsg_ClearMessage = 255,
 };
 
+#define STATE_DISCONNECTED  0
+#define STATE_ALARM         1 //!< In alarm state. Locks out all g-code processes. Allows settings access.
+#define STATE_CYCLE         2 //!< Cycle is running or motions are being executed.
+#define STATE_HOLD          3 //!< Active feed hold
+#define STATE_TOOL_CHANGE   4 //!< Manual tool change, similar to #STATE_HOLD - but stops spindle and allows jogging.
+#define STATE_IDLE          5 //!< Must be zero. No flags.
+#define STATE_HOMING        6 //!< Performing homing cycle
+#define STATE_JOG           7 //!< Jogging mode.
+
 enum machine_state_t {
+    MachineState_Disconnected = 0,
     MachineState_Alarm = 1,
     MachineState_Cycle = 2,
     MachineState_Hold = 3,
@@ -355,12 +354,12 @@ typedef enum {
 } __attribute__ ((__packed__)) status_code_t;
 
 typedef struct {
-    uint8_t address;
+    uint16_t address;
     machine_state_t machine_state;
     uint8_t machine_substate;
     axes_signals_t home_state;
-    uint8_t feed_override; // size changed in latest version!
-    uint8_t spindle_override;
+    uint16_t feed_override; // size changed in latest version!
+    uint16_t spindle_override;
     uint8_t spindle_stop;
     spindle_state_t spindle_state;
     int spindle_rpm;
@@ -383,15 +382,24 @@ typedef struct {
 
 typedef struct {
 int32_t uptime;
-uint8_t feed_over;
-uint8_t spindle_over;
-uint8_t rapid_over;
+uint16_t feed_over;
+uint16_t spindle_over;
+uint16_t rapid_over;
 uint32_t buttons;
+int32_t feedrate; //not currently used
+int32_t spindle_rpm; //not currently used
 int32_t x_axis;
 int32_t y_axis;
 int32_t z_axis;
 int32_t a_axis;
 } pendant_count_packet_t;
+
+typedef struct
+{
+    uint8_t mem[1024];
+    uint16_t mem_address;
+    bool mem_address_written;
+} status_context_t;
 
 enum ScreenMode{
     none,
@@ -403,6 +411,14 @@ enum ScreenMode{
     TOOL_CHANGE,
     ALARM,
     DISCONNECTED = 255,
+};
+
+enum CurrentJogAxis{
+    X,
+    Y,
+    Z,
+    A,
+    NONE = 255,
 };
 
 extern ScreenMode screenmode;
@@ -425,6 +441,9 @@ extern ScreenMode previous_screenmode;
 
 //extern Adafruit_NeoPixel pixels;
 
+//device specific variables
+extern CurrentJogAxis current_jog_axis;
+extern uint8_t simulation_mode;
 
 void draw_string(char * str);
 void draw_main_screen(machine_status_packet_t *prev_statuspacket, machine_status_packet_t *statuspacket, bool force);

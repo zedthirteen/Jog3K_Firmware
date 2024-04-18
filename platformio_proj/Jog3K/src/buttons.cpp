@@ -169,7 +169,7 @@ void readButtons(void){
     buttons           = ( buttons | (!gpio_get(LOWERBUTTON) << (14) ) );
   }
 
-  //Serial1.println("Buttons: ");
-  //Serial1.println(buttons, HEX);
+  Serial1.println("Buttons: ");
+  Serial1.println(buttons, HEX);
 
 }

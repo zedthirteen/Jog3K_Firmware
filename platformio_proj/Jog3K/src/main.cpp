@@ -10,48 +10,26 @@
 SerialTransfer packetTransfer;
 
 uint8_t simulation_mode;
+CurrentJogAxis current_jog_axis;
+
+static void process_simulation_mode(void);
+static void activate_alt_functions(void);
 
 char arr2[] = "HITHEE";
 
 float num = 0;
 
-static struct
-{
-    uint8_t mem[1024];
-    uint8_t mem_address;
-    bool mem_address_written;
-} status_context;
+status_context_t status_context, count_context;
 
 machine_status_packet_t prev_statuspacket = {};
 
 machine_status_packet_t *statuspacket = (machine_status_packet_t*) status_context.mem;
 machine_status_packet_t *previous_statuspacket = &prev_statuspacket;
 
-static struct
-{
-    uint8_t mem[1024];
-    uint8_t mem_address;
-    bool mem_address_written;
-} count_context;
-
 pendant_count_packet_t prev_countpacket = {};
 
 pendant_count_packet_t *countpacket = (pendant_count_packet_t*) count_context.mem;
 pendant_count_packet_t *previous_countpacket = &prev_countpacket;
-
-
-
-void transmit_data(void){
-  // use this variable to keep track of how many
-  // bytes we're stuffing in the transmit buffer
-  uint16_t sendSize = 0;
-
-  ///////////////////////////////////////// Stuff buffer with struct
-  sendSize = packetTransfer.txObj(countpacket, sendSize);
-
-  ///////////////////////////////////////// Send buffer
-  packetTransfer.sendData(sendSize);
-}
 
 void periodic_task(void)
 {
@@ -93,7 +71,22 @@ void setup() {
 
   previous_statuspacket->machine_state = MachineState_Other;
   simulation_mode = 0;
+  current_jog_axis = X;
 
+}
+
+
+
+void transmit_data(void){
+  // use this variable to keep track of how many
+  // bytes we're stuffing in the transmit buffer
+  uint16_t sendSize = 0;
+
+  ///////////////////////////////////////// Stuff buffer with struct
+  sendSize = packetTransfer.txObj(countpacket, sendSize);
+
+  ///////////////////////////////////////// Send buffer
+  packetTransfer.sendData(sendSize);
 }
 
 void receive_data(void){
@@ -116,27 +109,52 @@ void receive_data(void){
       if ( (mils - start_ms) < interval_ms) return; // not enough time
       start_ms += interval_ms;
 
-      statuspacket->coordinate.x = num * 13.23222;
-      statuspacket->coordinate.y = num * -7.89;
-      statuspacket->coordinate.z = num * 10;
-      statuspacket->coordinate.a = num * 3;
-      statuspacket->feed_rate = num * 100;
-      statuspacket->spindle_rpm = num * 200;
-      statuspacket->feed_override = num;
-      statuspacket->spindle_override = num+3;
-      num += 0.1;
+      //Serial1.println("receive data loop\n");
+   
+    if(statuspacket->machine_state == MachineState_Disconnected){
+      simulation_mode = 1;
+    }
+
+    if(simulation_mode)
+      process_simulation_mode();
+  
   }
 }
 
 void loop() {
 
   //Serial1.write("read buttons\r\n");
-  readButtons(); //read Inputs
+  readButtons(statuspacket); //read Inputs
   //Serial1.write("read encoders\r\n");
-  readEncoders(); //read Encoders
+  readEncoders(statuspacket); //read Encoders
+
+  //at this point need to check the buttons to see if alternate functions are activated.
+  activate_alt_functions();
 
   receive_data();
   //transmit_data();
 
   periodic_task();
+}
+
+static void activate_alt_functions(void){
+  //Check the buttons to see if alternate function modes need to be set.
+  if(!gpio_get(JOG_SELECT2)){
+  
+  }else if (!gpio_get(JOG_SELECT)){
+    
+  }
+
+}
+
+static void process_simulation_mode(void){
+  //during simulation mode the status packet is updated in response to local operations.
+  statuspacket->coordinate.x = countpacket->x_axis;
+  statuspacket->coordinate.y = countpacket->y_axis;
+  statuspacket->coordinate.z = countpacket->z_axis;
+  statuspacket->coordinate.a = countpacket->a_axis;
+
+  statuspacket->feed_override = countpacket->feed_over;
+  statuspacket->spindle_override = countpacket->spindle_over;
+
 }

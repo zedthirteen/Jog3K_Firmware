@@ -11,11 +11,11 @@
   
     // Encoders have 2 signals, which must be connected to 2 pins.
 
-  constexpr int ENCODER1_DATA_PIN = 25;
-  constexpr int ENCODER1_CLK_PIN = 26;
+  constexpr int ENCODER1_DATA_PIN = 26;
+  constexpr int ENCODER1_CLK_PIN = 25;
 
-  constexpr int ENCODER2_DATA_PIN = 8;
-  constexpr int ENCODER2_CLK_PIN = 9;
+  constexpr int ENCODER2_DATA_PIN = 9;
+  constexpr int ENCODER2_CLK_PIN = 8;
 
     //Sanguino	        2, 10, 11	                  0
 
@@ -36,12 +36,22 @@ Quadrature_encoder<ENCODER2_DATA_PIN, ENCODER2_CLK_PIN> Encoder2 = Quadrature_en
   const int QuadEncMp[] = {4,2,2};   //some Rotary encoders send multiple Electronical Impulses per mechanical pulse. How many Electrical impulses are send for each mechanical Latch?            
 
 long EncCount[QuadEncs];
+long prev_EncCount[QuadEncs];
 
 void init_encoders(){
+
+  for (uint8_t i = 0; i < QUADENCS; i++){
+    prev_EncCount[i] = 0;
+  }
+
+  countpacket->feed_over = 100;
+  countpacket->spindle_over = 100;
+
   #ifdef QUADENC
 if(QuadEncs>=1){
   #if QUADENCS >= 1
     Encoder0.begin();
+    Encoder0.flip(1);
   #endif
 }
 if(QuadEncs>=2){
@@ -63,6 +73,15 @@ if(QuadEncs>=4){
 }
 
 void readEncoders(){
+
+    extern pendant_count_packet_t *countpacket;
+    extern CurrentJogAxis current_jog_axis;
+
+    //start by copying the data to the old count for operations that only check the delta
+    for (uint8_t i = 0; i < QUADENCS; i++){
+      prev_EncCount[i] = EncCount[i];
+    }
+
     if(QuadEncs>=1){
       #if QUADENCS >= 1
         EncCount[0] = Encoder0.getCount()/QuadEncMp[0];
@@ -88,6 +107,27 @@ void readEncoders(){
         EncCount[4] = Encoder4.getCount()/QuadEncMp[4];
       #endif
     }
+
+    switch(current_jog_axis){
+      case X :
+        countpacket->x_axis = countpacket->x_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+      break;
+      case Y :
+        countpacket->y_axis = countpacket->y_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+      break;
+      case Z :
+        countpacket->z_axis = countpacket->z_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+      break;
+      case A :
+        countpacket->a_axis = countpacket->a_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+      break;
+      default :
+        //something wrong, do nothing with the count.
+      break;                        
+    }
+
+    countpacket->feed_over = countpacket->feed_over + (EncCount[1]-prev_EncCount[1]);//increment the override by the delta count
+    countpacket->spindle_over = countpacket->spindle_over + (EncCount[2]-prev_EncCount[2]);//increment the override by the delta count
 
     #if 0
     for ( int i = 0; i<QuadEncs; i++){
