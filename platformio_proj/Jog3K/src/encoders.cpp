@@ -93,8 +93,10 @@ void readEncoders(uint8_t function){
     
     previous_jog_axis = current_jog_axis;
     current_jog_axis = (CurrentJogAxis)i;
+
     //adjust decimal with spindle override encoder
     i = statuspacket->jog_mode.mode;
+    i = i + (EncCount[1]-prev_EncCount[1]);//increment the axis by the delta count
 
     if (i>(JOGMODE_MAX))
       i=0;
@@ -103,7 +105,15 @@ void readEncoders(uint8_t function){
 
     countpacket->jog_mode.mode=i;
 
-    //adjust jogmode with feed override encoder
+    i = statuspacket->jog_mode.modifier;
+    i = i + (EncCount[2]-prev_EncCount[2]);//increment the axis by the delta count
+
+    if (i>(JOGMODIFY_MAX))
+      i=0;
+    if(i<0)
+      i=(JOGMODIFY_MAX);
+
+    countpacket->jog_mode.modifier=i;
 
     } else if (function == 2){
       for (uint8_t i = 0; i < QUADENCS; i++){

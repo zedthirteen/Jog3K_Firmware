@@ -79,9 +79,9 @@
 
 #define OLED_SCREEN_FLIP 1
 
-jog_mode_t current_jogmode = {};
+//jog_mode_t current_jogmode = {};
 enum ScreenMode screenmode = {};
-jog_mode_t previous_jogmode = {};
+//jog_mode_t previous_jogmode = {};
 ScreenMode previous_screenmode = {};
 static bool force_screen_update = 0;
 bool screenflip = false;
@@ -370,7 +370,8 @@ static void draw_rpm(machine_status_packet_t *previous_packet, machine_status_pa
 void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
 
   //update the section on state changes
-  if(previous_packet->machine_state!=packet->machine_state || force_screen_update){      
+  if(previous_packet->machine_state!=packet->machine_state || 
+     force_screen_update){      
     //clear the feedrate section and write text and set up the number
     gfx.fillRect(areas.feedRate.x(), areas.feedRate.y(), areas.feedRate.w(), areas.feedRate.h(), BLACK );
     feedrate_display.begin(&FreeMono9pt7b);
@@ -386,6 +387,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
   if (packet->machine_state == STATE_HOLD){
     if(previous_packet->machine_state!=STATE_HOLD || force_screen_update){
         gfx.drawRGBBitmap(icon_x_location, icon_y_location, pausebutton, 20, 20);
+        feedrate_display.setFormat(3,0);
     }
     feedrate_display.draw(packet->feed_rate,force_screen_update);
     return;
@@ -395,16 +397,21 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
     //if entering cycle mode, clear and redraw the text
     if(previous_packet->machine_state!=STATE_CYCLE || force_screen_update){
       gfx.drawRGBBitmap(icon_x_location, icon_y_location, playbutton, 20, 20);
+      feedrate_display.setFormat(3,0);
     }
     feedrate_display.draw(packet->feed_rate,force_screen_update);
     return;
   }
 
-  if((packet->machine_state == STATE_IDLE)){
+  if((packet->machine_state == STATE_IDLE ||
+      packet->machine_state == STATE_JOG ||
+      packet->machine_state == STATE_TOOL_CHANGE)){
     //if entering cycle mode, clear and redraw the icon
-    if(previous_packet->machine_state!=STATE_IDLE || force_screen_update){
+    if(previous_packet->machine_state != STATE_IDLE || 
+      previous_packet->jog_mode.value != packet->jog_mode.value ||
+      force_screen_update){
       //select the jog icon based on the jog mode.
-      switch (current_jogmode.value) {
+      switch (packet->jog_mode.mode) {
         case JOGMODE_FAST :
             gfx.drawRGBBitmap(icon_x_location, icon_y_location, hare, 20, 20);        
           break;
@@ -418,7 +425,19 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
           gfx.drawRGBBitmap(icon_x_location, icon_y_location, error_icon, 20, 20);
         break; 
           }//close jog states      
-    }
+      if (packet->jog_stepsize > 1000)
+        feedrate_display.setFormat(3,0);
+      else if (packet->jog_stepsize > 100)
+        feedrate_display.setFormat(2,1);
+      else if (packet->jog_stepsize > 10)
+        feedrate_display.setFormat(1,2);
+      else if (packet->jog_stepsize > 1)
+        feedrate_display.setFormat(1,3);
+      else if (packet->jog_stepsize > 0)
+        feedrate_display.setFormat(0,4);
+      feedrate_display.draw(packet->jog_stepsize,1);            
+      }       
+
     feedrate_display.draw(packet->jog_stepsize,force_screen_update);
     return;
   }  
@@ -652,7 +671,7 @@ void draw_main_screen(machine_status_packet_t *previous_packet, machine_status_p
     }//close machine_state switch statement
   }//close screen mode switch statement
 #endif  
-  previous_jogmode = current_jogmode;
+  //previous_jogmode = current_jogmode;
   previous_screenmode = screenmode;
 
   if (force_screen_update)

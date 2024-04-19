@@ -161,6 +161,14 @@ void loop() {
 }
 
 static void process_simulation_mode(void){
+
+  static float fast_stepsize = 7500;
+  static float slow_stepsize = 500;
+  static float step_stepsize = 1;
+  
+  //Serial1.println("jog_mode: ");
+  //Serial1.println(statuspacket->jog_mode.value, HEX);
+
   //during simulation mode the status packet is updated in response to local operations.
   statuspacket->coordinate.x = countpacket->x_axis;
   statuspacket->coordinate.y = countpacket->y_axis;
@@ -175,7 +183,32 @@ static void process_simulation_mode(void){
 
   statuspacket->jog_mode = countpacket->jog_mode;  
   //cacluate jog stepsize
+  switch (statuspacket->jog_mode.mode){
+    case JOGMODE_FAST :
+      statuspacket->jog_stepsize = fast_stepsize;
+    break;
+    case JOGMODE_SLOW :
+      statuspacket->jog_stepsize = slow_stepsize;
+    break;
+    case JOGMODE_STEP :
+      statuspacket->jog_stepsize = step_stepsize;
+    break;        
+  }
 
+  switch (statuspacket->jog_mode.modifier){
+    case 0 :
+      statuspacket->jog_stepsize = statuspacket->jog_stepsize;
+    break;
+    case 1 :
+      statuspacket->jog_stepsize = statuspacket->jog_stepsize/10;
+    break;
+    case 2 :
+      statuspacket->jog_stepsize = statuspacket->jog_stepsize/100;
+    break;
+    case 3 :
+      statuspacket->jog_stepsize = statuspacket->jog_stepsize/1000;
+    break;              
+  }  
 
   //buttons just set the state directly.  Jog buttons set jogging state.  Run, hold halt set their states (halt sets alarm) etc.
   //pressing alt-spindle sets tool change state.

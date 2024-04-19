@@ -105,7 +105,7 @@ void update_neopixels(machine_status_packet_t *previous_packet, machine_status_p
     pixels.setPixelColor(COOLED,pixels.Color(0, 0, 100));  
 
   //preload jog LED colors depending on speed
-  switch (current_jogmode.mode) {
+  switch (packet->jog_mode.mode) {
   case JOGMODE_FAST :
     jog_color[0] = 255; jog_color[1] = 0; jog_color[2] = 0; //RGB
     break;

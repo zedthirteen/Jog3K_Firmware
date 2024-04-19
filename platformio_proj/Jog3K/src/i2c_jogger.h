@@ -171,6 +171,7 @@ enum machine_state_t {
 #define JOGMODE_STEP 2
 #define JOGMODE ROTATE 3
 #define JOGMODE_MAX 2
+#define JOGMODIFY_MAX 3
 
 
 typedef union {
