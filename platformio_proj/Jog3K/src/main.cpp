@@ -120,39 +120,37 @@ void receive_data(void){
 
 void loop() {  
 
-  //at this point need to check the see if alternate functions are activated.
-  if(!gpio_get(JOG_SELECT)){
-    //set the screenmode to reflect the SHIFT state
-    screenmode = JOG_MODIFY;
-    //change highlight around axis.  Change LED colors
-
-    readEncoders(statuspacket, countpacket, 1); //read Encoders
-    //adjust current axis with main encoder
-    //adjust decimal with spindle override encoder
-    //adjust jogmode with feed override encoder
-    draw_main_screen(previous_statuspacket, statuspacket);
+  //update the screenmode based on the reported machine state
+  switch (statuspacket->machine_state){
+    case MachineState_Alarm :
+      screenmode = ALARM;
+    break;
+    case MachineState_Homing :
+      screenmode = HOMING;
+    break;
+    default :
+      screenmode = none;
+      //at this point need to check the see if alternate functions are activated.
+      if(!gpio_get(JOG_SELECT)){
+        //set the screenmode to reflect the SHIFT state
+        screenmode = JOG_MODIFY;
+        readEncoders(statuspacket, countpacket, 1); //read Encoders
+        draw_main_screen(previous_statuspacket, statuspacket);
+      
+      }else if (!gpio_get(JOG_SELECT2)){
+          screenmode = JOG_MODIFY;
+          readEncoders(statuspacket, countpacket, 2); //read Encoders to set spindle RPM and feed rate/stepsize
+          draw_main_screen(previous_statuspacket, statuspacket);
+      } else if (!gpio_get(JOG_SELECT2) && !gpio_get(JOG_SELECT)){
+        //in future would like to use this to select a macro from the SD card.
+      } else{
+        //encoder counts should be updated
+        readEncoders(statuspacket, countpacket, 0); //read Encoders
+      }
+    break;//close default screenmode          
+  }//close switch statement
+  readButtons(); //read Inputs   
   
-  }else if (!gpio_get(JOG_SELECT2)){
-      //in future would like to use this to directly adjust current feed rate and current spindle speed setting.
-      screenmode = JOG_MODIFY;
-      readEncoders(statuspacket, countpacket, 2); //read Encoders
-  } else{
-    //update the screenmode based on the reported machine state
-    switch (statuspacket->machine_state){
-      case MachineState_Alarm :
-        screenmode = ALARM;
-      break;
-      case MachineState_Homing :
-        screenmode = HOMING;
-      break;
-      default :
-        screenmode = none;
-      break;            
-    }
-    //encoder counts should be updated
-    readEncoders(statuspacket, countpacket, 0); //read Encoders
-    readButtons(); //read Inputs   
-  }
   //Serial1.write("read encoders\r\n");
   receive_data();
   //transmit_data();
@@ -169,10 +167,10 @@ static void process_simulation_mode(void){
   //Serial1.println(statuspacket->jog_mode.value, HEX);
 
   //during simulation mode the status packet is updated in response to local operations.
-  statuspacket->coordinate.x = countpacket->x_axis;
-  statuspacket->coordinate.y = countpacket->y_axis;
-  statuspacket->coordinate.z = countpacket->z_axis;
-  statuspacket->coordinate.a = countpacket->a_axis;
+  //statuspacket->coordinate.x = countpacket->x_axis;
+  //statuspacket->coordinate.y = countpacket->y_axis;
+  //statuspacket->coordinate.z = countpacket->z_axis;
+  //statuspacket->coordinate.a = countpacket->a_axis;
 
   statuspacket->feed_override = countpacket->feed_over;
   statuspacket->spindle_override = countpacket->spindle_over;
@@ -184,13 +182,13 @@ static void process_simulation_mode(void){
   //cacluate jog stepsize
   switch (statuspacket->jog_mode.mode){
     case JOGMODE_FAST :
-      statuspacket->jog_stepsize = fast_stepsize;
+      statuspacket->jog_stepsize = fast_stepsize; 
     break;
     case JOGMODE_SLOW :
-      statuspacket->jog_stepsize = slow_stepsize;
+      statuspacket->jog_stepsize = slow_stepsize;       
     break;
     case JOGMODE_STEP :
-      statuspacket->jog_stepsize = step_stepsize;
+      statuspacket->jog_stepsize = step_stepsize;      
     break;        
   }
 
@@ -207,7 +205,36 @@ static void process_simulation_mode(void){
     case 3 :
       statuspacket->jog_stepsize = statuspacket->jog_stepsize/1000;
     break;              
-  }  
+  } 
+
+  switch (statuspacket->jog_mode.mode){
+    case JOGMODE_FAST :
+      statuspacket->coordinate.x = countpacket->x_axis*10;
+      statuspacket->coordinate.y = countpacket->y_axis*10;
+      statuspacket->coordinate.z = countpacket->z_axis*10;
+      statuspacket->coordinate.a = countpacket->a_axis*10;      
+    break;
+    case JOGMODE_SLOW :
+      statuspacket->coordinate.x = countpacket->x_axis;
+      statuspacket->coordinate.y = countpacket->y_axis;
+      statuspacket->coordinate.z = countpacket->z_axis;
+      statuspacket->coordinate.a = countpacket->a_axis;         
+    break;
+    case JOGMODE_STEP :
+      statuspacket->coordinate.x = countpacket->x_axis*statuspacket->jog_stepsize;
+      statuspacket->coordinate.y = countpacket->y_axis*statuspacket->jog_stepsize;
+      statuspacket->coordinate.z = countpacket->z_axis*statuspacket->jog_stepsize;
+      statuspacket->coordinate.a = countpacket->a_axis*statuspacket->jog_stepsize;         
+    break;        
+  }
+
+  if(previous_countpacket->feedrate != countpacket->feedrate)
+    statuspacket->jog_stepsize = countpacket->feedrate;
+  
+  if(previous_countpacket->spindle_rpm != countpacket->spindle_rpm)
+    statuspacket->spindle_rpm = countpacket->spindle_rpm;
+
+  *previous_countpacket = *countpacket;
 
   //buttons just set the state directly.  Jog buttons set jogging state.  Run, hold halt set their states (halt sets alarm) etc.
   //pressing alt-spindle sets tool change state.

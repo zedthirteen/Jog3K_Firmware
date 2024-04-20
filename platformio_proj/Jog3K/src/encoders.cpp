@@ -74,61 +74,77 @@ if(QuadEncs>=4){
 
 void readEncoders(machine_status_packet_t *statuspacket, pendant_count_packet_t *countpacket, uint8_t function){
 
+  float i;
+
     if(function == 1){
-      for (uint8_t i = 0; i < QUADENCS; i++){
-        prev_EncCount[i] = EncCount[i];
+      for (uint8_t j = 0; j < QUADENCS; j++){
+        prev_EncCount[j] = EncCount[j];
       }
 
       EncCount[0] = Encoder0.getCount()/QuadEncMp[0];
       EncCount[1] = Encoder1.getCount()/QuadEncMp[1];
       EncCount[2] = Encoder2.getCount()/QuadEncMp[2];           
-    //adjust current axis with main encoder
-    float i = current_jog_axis;
-    i = i + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+      //adjust current axis with main encoder
+      i = current_jog_axis;
+      i = i + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
 
-    if (i>(NUMBER_OF_AXES-1))
-      i=0;
-    if(i<0)
-      i=(NUMBER_OF_AXES-1);
-    
-    previous_jog_axis = current_jog_axis;
-    current_jog_axis = (CurrentJogAxis)i;
+      if (i>(NUMBER_OF_AXES-1))
+        i=0;
+      if(i<0)
+        i=(NUMBER_OF_AXES-1);
+      
+      previous_jog_axis = current_jog_axis;
+      current_jog_axis = (CurrentJogAxis)i;
 
-    //adjust decimal with spindle override encoder
-    i = statuspacket->jog_mode.mode;
-    i = i + (EncCount[1]-prev_EncCount[1]);//increment the axis by the delta count
+      //adjust decimal with spindle override encoder
+      i = statuspacket->jog_mode.mode;
+      i = i + (EncCount[1]-prev_EncCount[1]);//increment the axis by the delta count
 
-    if (i>(JOGMODE_MAX))
-      i=0;
-    if(i<0)
-      i=(JOGMODE_MAX);
+      if (i>(JOGMODE_MAX))
+        i=0;
+      if(i<0)
+        i=(JOGMODE_MAX);
 
-    countpacket->jog_mode.mode=i;
+      countpacket->jog_mode.mode=i;
 
-    i = statuspacket->jog_mode.modifier;
-    i = i + (EncCount[2]-prev_EncCount[2]);//increment the axis by the delta count
+      i = statuspacket->jog_mode.modifier;
+      i = i + (EncCount[2]-prev_EncCount[2]);//increment the axis by the delta count
 
-    if (i>(JOGMODIFY_MAX))
-      i=0;
-    if(i<0)
-      i=(JOGMODIFY_MAX);
+      if (i>(JOGMODIFY_MAX))
+        i=0;
+      if(i<0)
+        i=(JOGMODIFY_MAX);
 
-    countpacket->jog_mode.modifier=i;
+      countpacket->jog_mode.modifier=i;
 
     } else if (function == 2){
-      for (uint8_t i = 0; i < QUADENCS; i++){
-        prev_EncCount[i] = EncCount[i];
+      for (uint8_t j = 0; j < QUADENCS; j++){
+        prev_EncCount[j] = EncCount[j];
       }
 
       EncCount[0] = Encoder0.getCount()/QuadEncMp[0];
       EncCount[1] = Encoder1.getCount()/QuadEncMp[1];
-      EncCount[2] = Encoder2.getCount()/QuadEncMp[2];         
+      EncCount[2] = Encoder2.getCount()/QuadEncMp[2];
+
+      //adjust the RPM with the main encoder
+      i = statuspacket->spindle_rpm;
+      i = i + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+      if(i<0)
+        i=0;  
+      countpacket->spindle_rpm=i;     
+
+      //adjust the feed rate with the feed encoder 
+      i = statuspacket->jog_stepsize;
+      i = i + (EncCount[1]-prev_EncCount[1]);//increment the axis by the delta count
+      if(i<0)
+        i=0;
+      countpacket->feedrate=i;
 
     } else {//function = 0
 
       //start by copying the data to the old count for operations that only check the delta
-      for (uint8_t i = 0; i < QUADENCS; i++){
-        prev_EncCount[i] = EncCount[i];
+      for (uint8_t j = 0; j < QUADENCS; j++){
+        prev_EncCount[j] = EncCount[j];
       }
 
       EncCount[0] = Encoder0.getCount()/QuadEncMp[0];

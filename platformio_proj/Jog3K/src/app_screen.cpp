@@ -450,7 +450,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
           feedrate_display.setFormat(3, 0);
       } 
       else if (packet->jog_stepsize >= 1000.0f && packet->jog_stepsize < 10000.0f){
-          feedrate_display.setFormat(3, 0);
+          feedrate_display.setFormat(2, 0);
       }
       else if (packet->jog_stepsize >= 100.0f && packet->jog_stepsize < 1000.0f){
           feedrate_display.setFormat(3, 1);

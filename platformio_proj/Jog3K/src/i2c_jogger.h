@@ -394,8 +394,8 @@ int32_t feed_over;
 int32_t spindle_over;
 int32_t rapid_over;
 uint32_t buttons;
-float feedrate; //not currently used
-float spindle_rpm; //not currently used
+float feedrate; 
+float spindle_rpm; 
 float x_axis;
 float y_axis;
 float z_axis;
