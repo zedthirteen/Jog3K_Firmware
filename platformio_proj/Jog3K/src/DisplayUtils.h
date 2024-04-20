@@ -321,9 +321,9 @@ public:
      Default precision is 3 must be less than size-1 (ie, we always
      display a leading zero).
   */
-  void setFormat(uint8_t size = 3, uint8_t precision = 3) {
-    size = max(min(size, 15), 1);
-    precision = max(min(precision, (size - 1)), 0);
+  void setFormat(uint8_t size, uint8_t precision) {
+    //size = max(min(size, 15), 1);
+    //precision = max(min(precision, (size - 1)), 0);
     if (this->numDigits != size || this->precision != precision) {
       this->numDigits = size;
       this->precision = precision;

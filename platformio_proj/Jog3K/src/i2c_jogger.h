@@ -10,6 +10,7 @@
 #include <Fonts/FreeSansBold9pt7b.h>
 #include <Fonts/FreeSansBold12pt7b.h>
 #include <Fonts/FreeSansBold18pt7b.h>
+#include <Fonts/Picopixel.h>
 
 
 #define PROTOCOL_VERSION 1
@@ -431,11 +432,11 @@ enum CurrentJogAxis{
 extern ScreenMode screenmode;
 extern ScreenMode previous_screenmode;
 
-extern machine_status_packet_t *statuspacket;
-extern machine_status_packet_t prev_statuspacket;
+//extern machine_status_packet_t *statuspacket;
+//extern machine_status_packet_t prev_statuspacket;
 
-extern pendant_count_packet_t prev_countpacket;
-extern pendant_count_packet_t *countpacket;
+//extern pendant_count_packet_t prev_countpacket;
+//extern pendant_count_packet_t *countpacket;
 
 extern bool screenflip;
 extern int command_error;
@@ -454,7 +455,7 @@ extern CurrentJogAxis previous_jog_axis;
 extern uint8_t simulation_mode;
 
 void draw_string(char * str);
-void draw_main_screen(machine_status_packet_t *prev_statuspacket, machine_status_packet_t *statuspacket, bool force);
+void draw_main_screen(machine_status_packet_t *prev_statuspacket, machine_status_packet_t *statuspacket);
 void update_neopixels(machine_status_packet_t *prev_statuspacket, machine_status_packet_t *statuspacket);
 void init_screen (void);
 void init_neopixels (void);

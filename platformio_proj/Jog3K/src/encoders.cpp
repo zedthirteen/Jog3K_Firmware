@@ -38,7 +38,7 @@ Quadrature_encoder<ENCODER2_DATA_PIN, ENCODER2_CLK_PIN> Encoder2 = Quadrature_en
 long EncCount[QuadEncs];
 long prev_EncCount[QuadEncs];
 
-void init_encoders(){
+void init_encoders(machine_status_packet_t *statuspacket, pendant_count_packet_t *countpacket){
 
   for (uint8_t i = 0; i < QUADENCS; i++){
     prev_EncCount[i] = 0;
@@ -72,7 +72,7 @@ if(QuadEncs>=4){
 #endif
 }
 
-void readEncoders(uint8_t function){
+void readEncoders(machine_status_packet_t *statuspacket, pendant_count_packet_t *countpacket, uint8_t function){
 
     if(function == 1){
       for (uint8_t i = 0; i < QUADENCS; i++){

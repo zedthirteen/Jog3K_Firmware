@@ -44,7 +44,7 @@ void periodic_task(void)
   start_ms += interval_ms;
 
   //Serial1.write("update screen\r\n");
-  draw_main_screen(previous_statuspacket, statuspacket, 0);
+  draw_main_screen(previous_statuspacket, statuspacket);
   //Serial1.write("update pixels\r\n");
   update_neopixels(previous_statuspacket, statuspacket);
   prev_statuspacket = *statuspacket;
@@ -61,7 +61,7 @@ void setup() {
   delay(250);
 
   init_screen();
-  init_encoders();
+  init_encoders(statuspacket, countpacket);
   init_neopixels();
   init_buttons();
 
@@ -126,17 +126,16 @@ void loop() {
     screenmode = JOG_MODIFY;
     //change highlight around axis.  Change LED colors
 
-    readEncoders(1); //read Encoders
-    bool force = 1;
+    readEncoders(statuspacket, countpacket, 1); //read Encoders
     //adjust current axis with main encoder
     //adjust decimal with spindle override encoder
     //adjust jogmode with feed override encoder
-    draw_main_screen(previous_statuspacket, statuspacket, 1);
+    draw_main_screen(previous_statuspacket, statuspacket);
   
   }else if (!gpio_get(JOG_SELECT2)){
       //in future would like to use this to directly adjust current feed rate and current spindle speed setting.
       screenmode = JOG_MODIFY;
-      readEncoders(2); //read Encoders
+      readEncoders(statuspacket, countpacket, 2); //read Encoders
   } else{
     //update the screenmode based on the reported machine state
     switch (statuspacket->machine_state){
@@ -151,7 +150,7 @@ void loop() {
       break;            
     }
     //encoder counts should be updated
-    readEncoders(0); //read Encoders
+    readEncoders(statuspacket, countpacket, 0); //read Encoders
     readButtons(); //read Inputs   
   }
   //Serial1.write("read encoders\r\n");
@@ -162,8 +161,8 @@ void loop() {
 
 static void process_simulation_mode(void){
 
-  static float fast_stepsize = 7500;
-  static float slow_stepsize = 500;
+  static float fast_stepsize = 15000;
+  static float slow_stepsize = 1500;
   static float step_stepsize = 1;
   
   //Serial1.println("jog_mode: ");

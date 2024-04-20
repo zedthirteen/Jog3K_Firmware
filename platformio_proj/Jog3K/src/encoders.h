@@ -23,7 +23,7 @@
 
 extern long EncCount[QuadEncs];
 
-void init_encoders(void);
-void readEncoders (uint8_t function);
+void init_encoders(machine_status_packet_t *statuspacket, pendant_count_packet_t *countpacket);
+void readEncoders (machine_status_packet_t *statuspacket, pendant_count_packet_t *countpacket, uint8_t function);
 
 #endif
