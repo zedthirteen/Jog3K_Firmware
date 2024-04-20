@@ -31,16 +31,26 @@
 extern const uint8_t *flash_target_contents;
 
 //neopixel led locations
-#define RAISELED 0
-#define JOGLED 1
-#define SPINLED 2
-#define FEEDLED 3
-#define HALTLED 4
-#define HOLDLED 5
-#define RUNLED 6
-#define SPINDLELED 7
-#define COOLED 8
-#define HOMELED 9
+#define SYSLED 0
+#define SELLED 1
+#define LEFTLED 2
+#define DOWNLED 3
+#define LOWERLED 4
+#define RIGHTLED 5
+#define RAISELED 6
+#define UPLED 7
+#define HOMELED 8
+#define SPINDLELED 9
+#define SEL2LED 10
+#define SPINLED 11
+#define SPINLED1 12
+#define MISTLED 13
+#define HOLDLED 14
+#define HALTLED 15
+#define RUNLED 16
+#define COOLED 17
+#define FEEDLED 18
+#define FEEDLED1 19
 
 #define HALTBUTTON 13
 #define RUNBUTTON 14
@@ -63,6 +73,42 @@ extern const uint8_t *flash_target_contents;
 #define FLOODBUTTON 15
 #define MISTBUTTON 11
 #define HOMEBUTTON 28
+
+//button masks
+#define halt_pressed = 0;
+#define hold_pressed = 1;
+#define cycle_start_pressed = 2;
+#define alt_hold_pressed = 16;
+#define alt_halt_pressed = 15;
+#define alt_cycle_start_pressed = 17;
+
+#define spindle_over_reset_pressed = 7;
+#define feed_over_reset_pressed = 8;
+#define alt_spindle_over_reset_pressed = 22;
+#define alt_feed_over_reset_pressed = 23;
+
+#define spindle_pressed = 3;
+#define mist_pressed = 4;
+#define flood_pressed = 5;
+#define home_pressed = 6;
+#define alt_spindle_pressed = 18;
+#define alt_mist_pressed = 19;
+#define alt_flood_pressed = 20;
+#define alt_home_pressed = 21;
+
+#define up_pressed = 9;
+#define down_pressed = 10;
+#define left_pressed = 11;
+#define right_pressed = 12;
+#define raise_pressed = 13;
+#define lower_pressed = 14;
+
+#define alt_up_pressed = 24;
+#define alt_down_pressed = 25;
+#define alt_left_pressed = 26;
+#define alt_right_pressed = 27;
+#define alt_lower_pressed = 28;
+#define alt_raise_pressed = 29;
 
 #define TICK_TIMER_PERIOD 5
 

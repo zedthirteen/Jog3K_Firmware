@@ -93,7 +93,6 @@ void readEncoders(machine_status_packet_t *statuspacket, pendant_count_packet_t 
       if(i<0)
         i=(NUMBER_OF_AXES-1);
       
-      previous_jog_axis = current_jog_axis;
       current_jog_axis = (CurrentJogAxis)i;
 
       //adjust decimal with spindle override encoder
@@ -126,19 +125,24 @@ void readEncoders(machine_status_packet_t *statuspacket, pendant_count_packet_t 
       EncCount[1] = Encoder1.getCount()/QuadEncMp[1];
       EncCount[2] = Encoder2.getCount()/QuadEncMp[2];
 
-      //adjust the RPM with the main encoder
-      i = statuspacket->spindle_rpm;
-      i = i + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
-      if(i<0)
-        i=0;  
-      countpacket->spindle_rpm=i;     
+      //adjust the RPM with the spindle encoder
+      i = countpacket->spindle_rpm;
+      i = i + (EncCount[0]-prev_EncCount[0]);//increment the rpm  by the delta count
+      //if(i<0)
+      //  i=0;  
+      countpacket->spindle_rpm=i;
+      //Serial1.println("countpacket->spindle_rpm: ");
+      //Serial1.println(countpacket->spindle_rpm);         
 
       //adjust the feed rate with the feed encoder 
-      i = statuspacket->jog_stepsize;
-      i = i + (EncCount[1]-prev_EncCount[1]);//increment the axis by the delta count
-      if(i<0)
-        i=0;
+      i = countpacket->feedrate;
+      i = i + (EncCount[1]-prev_EncCount[1]);//increment the rate by the delta count
+      //if(i<0)
+      //  i=0;
       countpacket->feedrate=i;
+
+      //Serial1.println("countpacket->feedrate: ");
+      //Serial1.println(countpacket->feedrate);
 
     } else {//function = 0
 

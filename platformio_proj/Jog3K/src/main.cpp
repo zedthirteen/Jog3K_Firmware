@@ -88,7 +88,7 @@ void transmit_data(void){
 
 void receive_data(void){
 
-  const uint32_t interval_ms = 25;
+  const uint32_t interval_ms = 15;
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
 
@@ -135,12 +135,12 @@ void loop() {
         //set the screenmode to reflect the SHIFT state
         screenmode = JOG_MODIFY;
         readEncoders(statuspacket, countpacket, 1); //read Encoders
-        draw_main_screen(previous_statuspacket, statuspacket);
+        //draw_main_screen(previous_statuspacket, statuspacket);
       
       }else if (!gpio_get(JOG_SELECT2)){
           screenmode = JOG_MODIFY;
           readEncoders(statuspacket, countpacket, 2); //read Encoders to set spindle RPM and feed rate/stepsize
-          draw_main_screen(previous_statuspacket, statuspacket);
+          //draw_main_screen(previous_statuspacket, statuspacket);
       } else if (!gpio_get(JOG_SELECT2) && !gpio_get(JOG_SELECT)){
         //in future would like to use this to select a macro from the SD card.
       } else{
@@ -158,10 +158,11 @@ void loop() {
 }
 
 static void process_simulation_mode(void){
-
+ 
   static float fast_stepsize = 15000;
   static float slow_stepsize = 1500;
   static float step_stepsize = 1;
+
   
   //Serial1.println("jog_mode: ");
   //Serial1.println(statuspacket->jog_mode.value, HEX);
@@ -182,15 +183,19 @@ static void process_simulation_mode(void){
   //cacluate jog stepsize
   switch (statuspacket->jog_mode.mode){
     case JOGMODE_FAST :
-      statuspacket->jog_stepsize = fast_stepsize; 
+        statuspacket->jog_stepsize = fast_stepsize; 
     break;
     case JOGMODE_SLOW :
-      statuspacket->jog_stepsize = slow_stepsize;       
+        statuspacket->jog_stepsize = slow_stepsize;       
     break;
     case JOGMODE_STEP :
-      statuspacket->jog_stepsize = step_stepsize;      
+        statuspacket->jog_stepsize = step_stepsize;      
     break;        
   }
+
+  //if(previous_countpacket->feedrate != countpacket->feedrate){
+    statuspacket->jog_stepsize = statuspacket->jog_stepsize+countpacket->feedrate;
+  //}  
 
   switch (statuspacket->jog_mode.modifier){
     case 0 :
@@ -227,9 +232,6 @@ static void process_simulation_mode(void){
       statuspacket->coordinate.a = countpacket->a_axis*statuspacket->jog_stepsize;         
     break;        
   }
-
-  if(previous_countpacket->feedrate != countpacket->feedrate)
-    statuspacket->jog_stepsize = countpacket->feedrate;
   
   if(previous_countpacket->spindle_rpm != countpacket->spindle_rpm)
     statuspacket->spindle_rpm = countpacket->spindle_rpm;
@@ -238,5 +240,4 @@ static void process_simulation_mode(void){
 
   //buttons just set the state directly.  Jog buttons set jogging state.  Run, hold halt set their states (halt sets alarm) etc.
   //pressing alt-spindle sets tool change state.
-
 }

@@ -350,6 +350,7 @@ void draw_dro_readout(machine_status_packet_t *previous_packet, machine_status_p
         }
     }
 }
+  previous_jog_axis = current_jog_axis;
 }
 
 static void draw_rpm(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
@@ -473,6 +474,7 @@ void draw_feedrate(machine_status_packet_t *previous_packet, machine_status_pack
 
     if(previous_packet->machine_state != STATE_IDLE || 
       previous_packet->jog_mode.value != packet->jog_mode.value ||
+      previous_packet->jog_stepsize != packet->jog_stepsize ||
       force_screen_update){        
       //select the jog icon based on the jog mode.
       switch (packet->jog_mode.mode) {

@@ -1,22 +1,3 @@
-/**
- * Example program for basic use of pico as an I2C peripheral (previously known as I2C slave)
- * 
- * This example allows the pico to act as a 256byte RAM
- * 
- * Author: Graham Smith (graham@smithg.co.uk)
- */
-
-
-// Usage:
-//
-// When writing data to the pico the first data byte updates the current address to be used when writing or reading from the RAM
-// Subsequent data bytes contain data that is written to the ram at the current address and following locations (current address auto increments)
-//
-// When reading data from the pico the first data byte returned will be from the ram storage located at current address
-// Subsequent bytes will be returned from the following ram locations (again current address auto increments)
-//
-// N.B. if the current address reaches 255, it will autoincrement to 0 after next read / write
-
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include <SPI.h>
@@ -30,11 +11,6 @@
 #include <Adafruit_NeoPixel.h>
 
 #include "i2c_jogger.h"
-
-//#define SHOWJOG 1
-//#define SHOWOVER 1
-#define SHOWRAM 1
-#define TWOWAY 0
 
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
@@ -50,8 +26,19 @@ void init_neopixels (void){
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   pixels.setBrightness(NEO_BRIGHTNESS);
   
+  for (int i = 0; i < 20; i++){
+
   pixels.clear(); // Set all pixel colors to 'off'
+  pixels.setPixelColor(i,pixels.Color(run_color[0], run_color[1], run_color[2]));
   pixels.show();   // Send the updated pixel colors to the hardware.
+  //delay(1000);
+
+  }
+
+  pixels.clear(); // Set all pixel colors to 'off'
+  pixels.setPixelColor(SYSLED,pixels.Color(run_color[0], run_color[1], run_color[2]));
+  pixels.show();   // Send the updated pixel colors to the hardware.
+
 }
 
 void update_neopixels(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
@@ -84,7 +71,9 @@ void update_neopixels(machine_status_packet_t *previous_packet, machine_status_p
     rpm_color[2] = 0;    
 
   pixels.setPixelColor(FEEDLED,pixels.Color((uint8_t) feed_color[0], (uint8_t) feed_color[1], (uint8_t) feed_color[2]));
+  pixels.setPixelColor(FEEDLED1,pixels.Color((uint8_t) feed_color[0], (uint8_t) feed_color[1], (uint8_t) feed_color[2]));
   pixels.setPixelColor(SPINLED,pixels.Color(rpm_color[0], rpm_color[1], rpm_color[2]));
+  pixels.setPixelColor(SPINLED1,pixels.Color(rpm_color[0], rpm_color[1], rpm_color[2]));
 
   //set home LED
   if(packet->home_state.value)
@@ -99,10 +88,16 @@ void update_neopixels(machine_status_packet_t *previous_packet, machine_status_p
     pixels.setPixelColor(SPINDLELED,pixels.Color(75, 255, 130));
 
   //set Coolant LED
-  if(packet->coolant_state.value)
+  if(packet->coolant_state.flood)
     pixels.setPixelColor(COOLED,pixels.Color(0, 100, 255));
   else
     pixels.setPixelColor(COOLED,pixels.Color(0, 0, 100));  
+
+  //set Coolant LED
+  if(packet->coolant_state.mist)
+    pixels.setPixelColor(MISTLED,pixels.Color(0, 100, 255));
+  else
+    pixels.setPixelColor(MISTLED,pixels.Color(0, 0, 100));      
 
   //preload jog LED colors depending on speed
   switch (packet->jog_mode.mode) {
@@ -181,6 +176,8 @@ void update_neopixels(machine_status_packet_t *previous_packet, machine_status_p
       pixels.setPixelColor(HOMELED,pixels.Color(255, 0, 0));
       pixels.setPixelColor(SPINLED,pixels.Color(255, 0, 0));
       pixels.setPixelColor(FEEDLED,pixels.Color(255, 0, 0));
+      pixels.setPixelColor(SPINLED1,pixels.Color(255, 0, 0));
+      pixels.setPixelColor(FEEDLED1,pixels.Color(255, 0, 0));      
     break;//close alarm state
 
     default :  //this is active when there is a non-interactive controller
@@ -198,22 +195,38 @@ void update_neopixels(machine_status_packet_t *previous_packet, machine_status_p
     //run_color[0] = 138; run_color[1] = 43; run_color[2] = 226; //RGB
     //hold_color[0] = 138; hold_color[1] = 43; hold_color[2] = 226; //RGB   
     //halt_color[0] = 0; halt_color[1] = 0; halt_color[2] = 0; //RGB 
-    pixels.setPixelColor(COOLED,pixels.Color(138, 43, 226));
-    pixels.setPixelColor(HOMELED,pixels.Color(138, 43, 226));
-    //pixels.setPixelColor(FEEDLED,pixels.Color(0, 0, 0));
-    //pixels.setPixelColor(SPINLED,pixels.Color(0, 0, 0));
+    //pixels.setPixelColor(COOLED,pixels.Color(138, 43, 226));
+    //pixels.setPixelColor(MISTLED,pixels.Color(138, 43, 226));
+    //pixels.setPixelColor(HOMELED,pixels.Color(138, 43, 226));
+    //pixels.setPixelColor(SPINDLELED,pixels.Color(138, 43, 226));
+    pixels.setPixelColor(SYSLED,pixels.Color(138, 43, 226));
+    pixels.setPixelColor(SELLED,pixels.Color(138, 43, 226));
+    pixels.setPixelColor(SEL2LED,pixels.Color(138, 43, 226));    
   }
 
   //set jog LED values
-  if(screenmode == JOG_MODIFY)
-    pixels.setPixelColor(JOGLED,pixels.Color(138, 43, 226));
-  else
-    pixels.setPixelColor(JOGLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
+  if(screenmode == JOG_MODIFY){
+    pixels.setPixelColor(SYSLED,pixels.Color(138, 43, 226));
+    pixels.setPixelColor(SELLED,pixels.Color(138, 43, 226));
+    pixels.setPixelColor(SEL2LED,pixels.Color(138, 43, 226));
+  } else {
+    pixels.setPixelColor(SYSLED,pixels.Color(run_color[0], run_color[1], run_color[2]));
+    pixels.setPixelColor(SELLED,pixels.Color(0, 0, 0));
+    pixels.setPixelColor(SEL2LED,pixels.Color(0, 0, 0));
+  }
 
-  if(packet->coordinate.a==0xFFFFFFFF && screenmode == JOG_MODIFY)
+  if(packet->coordinate.a==0xFFFFFFFF && screenmode == JOG_MODIFY){
     pixels.setPixelColor(RAISELED,pixels.Color(138, 43, 226));
-  else
+    pixels.setPixelColor(LOWERLED,pixels.Color(138, 43, 226));
+  } else {
     pixels.setPixelColor(RAISELED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
+    pixels.setPixelColor(LOWERLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
+  }
+  pixels.setPixelColor(LEFTLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
+  pixels.setPixelColor(RIGHTLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
+  pixels.setPixelColor(UPLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
+  pixels.setPixelColor(DOWNLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));      
+
   pixels.setPixelColor(HALTLED,pixels.Color(halt_color[0], halt_color[1], halt_color[2]));
   pixels.setPixelColor(HOLDLED,pixels.Color(hold_color[0], hold_color[1], hold_color[2]));
   pixels.setPixelColor(RUNLED,pixels.Color(run_color[0], run_color[1], run_color[2]));
@@ -223,8 +236,12 @@ void update_neopixels(machine_status_packet_t *previous_packet, machine_status_p
 
 void activate_jogled(void){
   jog_color[0] = 255; jog_color[1] = 150; jog_color[2] = 0; //RGB
-  pixels.setPixelColor(JOGLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
   pixels.setPixelColor(RAISELED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
+  pixels.setPixelColor(LOWERLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
+  pixels.setPixelColor(LEFTLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
+  pixels.setPixelColor(RIGHTLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
+  pixels.setPixelColor(UPLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
+  pixels.setPixelColor(DOWNLED,pixels.Color(jog_color[0], jog_color[1], jog_color[2]));
   pixels.show();
 }
 

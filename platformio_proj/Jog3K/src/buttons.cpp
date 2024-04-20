@@ -8,58 +8,6 @@
 
 #include "i2c_jogger.h"
 
-/* these are simply used for convenience */
-
-/* these are simply used for convenience */
-uint8_t halt_pressed = 0;
-uint8_t hold_pressed = 0;
-uint8_t cycle_start_pressed = 0;
-uint8_t alt_hold_pressed = 0;
-uint8_t alt_halt_pressed = 0;
-uint8_t alt_cycle_start_pressed = 0;
-
-uint8_t feed_over_up_pressed = 0;
-uint8_t feed_over_down_pressed = 0;
-uint8_t feed_over_reset_pressed = 0;
-
-uint8_t spindle_over_up_pressed = 0;
-uint8_t spindle_over_down_pressed = 0;
-uint8_t spindle_over_reset_pressed = 0;
-
-uint8_t jog_mod_pressed = 0;
-uint8_t jog_mode_pressed = 0;
-uint8_t jog_toggle_pressed = 0;
-
-uint8_t mist_pressed = 0;
-uint8_t flood_pressed = 0;
-uint8_t spindle_pressed = 0;
-uint8_t home_pressed = 0;
-
-uint8_t direction_pressed = 0;
-uint8_t previous_direction_pressed = 0;
-uint8_t keysent = 0;
-
-uint8_t up_pressed = 0;
-uint8_t down_pressed = 0;
-uint8_t left_pressed = 0;
-uint8_t right_pressed = 0;
-uint8_t raise_pressed = 0;
-uint8_t lower_pressed = 0;
-
-uint8_t alt_up_pressed = 0;
-uint8_t alt_down_pressed = 0;
-uint8_t alt_left_pressed = 0;
-uint8_t alt_right_pressed = 0;
-uint8_t alt_lower_pressed = 0;
-uint8_t alt_raise_pressed = 0;
-uint8_t alt_spindle_pressed = 0;
-uint8_t alt_home_pressed = 0;
-uint8_t alt_flood_pressed = 0;
-uint8_t alt_mist_pressed = 0;
-uint8_t reset_pressed = 0;
-uint8_t unlock_pressed = 0;
-uint8_t spinon_pressed = 0;
-
 uint32_t buttons;
 
 void init_buttons(void){
@@ -139,18 +87,19 @@ void readButtons(){
   if (!gpio_get(JOG_SELECT2) || !gpio_get(JOG_SELECT)){
     buttons           = ( buttons | (!gpio_get(HALTBUTTON) << (15) ) );
     buttons           = ( buttons | (!gpio_get(HOLDBUTTON) << (16) ) );
-    buttons           = ( buttons | (!gpio_get(HOMEBUTTON) << (17) ) );
-    buttons           = ( buttons | (!gpio_get(RUNBUTTON) << (18) ) );
-    buttons           = ( buttons | (!gpio_get(SPINDLEBUTTON) << (19) ) );
+    buttons           = ( buttons | (!gpio_get(RUNBUTTON) << (17) ) );
+    buttons           = ( buttons | (!gpio_get(SPINDLEBUTTON) << (18) ) );
+    buttons           = ( buttons | (!gpio_get(MISTBUTTON) << (19) ) );    
     buttons           = ( buttons | (!gpio_get(FLOODBUTTON) << (20) ) );
-    buttons           = ( buttons | (!gpio_get(MISTBUTTON) << (21) ) );
-    buttons           = ( buttons | (!gpio_get(UPBUTTON) << (22) ) );
-    buttons           = ( buttons | (!gpio_get(DOWNBUTTON) << (23) ) );
-    buttons           = ( buttons | (!gpio_get(LEFTBUTTON) << (24) ) );
-    buttons           = ( buttons | (!gpio_get(RIGHTBUTTON) << (25) ) );
-    buttons           = ( buttons | (!gpio_get(RAISEBUTTON) << (26) ) );
-    buttons           = ( buttons | (!gpio_get(LOWERBUTTON) << (27) ) );
-
+    buttons           = ( buttons | (!gpio_get(HOMEBUTTON) << (21) ) );    
+    buttons           = ( buttons | (!gpio_get(SPINOVER_RESET) << (22) ) );
+    buttons           = ( buttons | (!gpio_get(FEEDOVER_RESET) << (23) ) );
+    buttons           = ( buttons | (!gpio_get(UPBUTTON) << (24) ) );
+    buttons           = ( buttons | (!gpio_get(DOWNBUTTON) << (25) ) );
+    buttons           = ( buttons | (!gpio_get(LEFTBUTTON) << (26) ) );
+    buttons           = ( buttons | (!gpio_get(RIGHTBUTTON) << (27) ) );
+    buttons           = ( buttons | (!gpio_get(RAISEBUTTON) << (28) ) );
+    buttons           = ( buttons | (!gpio_get(LOWERBUTTON) << (29) ) );
   } else {
     buttons           = ( buttons | (!gpio_get(HALTBUTTON) << (0) ) );
     buttons           = ( buttons | (!gpio_get(HOLDBUTTON) << (1) ) );
