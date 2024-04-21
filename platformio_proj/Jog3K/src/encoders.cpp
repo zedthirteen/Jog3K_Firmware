@@ -168,6 +168,12 @@ void readEncoders(machine_status_packet_t *statuspacket, pendant_count_packet_t 
         case A :
           countpacket->a_axis = countpacket->a_axis + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
         break;
+        case FOVER :
+          countpacket->feed_over = countpacket->feed_over + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+        break;
+        case SOVER :
+          countpacket->spindle_over = countpacket->spindle_over + (EncCount[0]-prev_EncCount[0]);//increment the axis by the delta count
+        break;                
         default :
           //something wrong, do nothing with the count.
         break;                        

@@ -308,11 +308,22 @@ void setup_dro_readout(machine_status_packet_t *previous_packet, machine_status_
     gfx.setFont(&FreeMonoBold12pt7b);
   else
     gfx.setFont(&FreeMono9pt7b);
-  for (int i = 0; i<numaxes; i++){      
+  for (int i = 0; i<numaxes; i++){
+    //add an icon (triangle) to the current jog axis
+    gfx.fillTriangle(areas.axesLabels.x()+16, (areas.axes.y() + (i * incr) + topMargin ) +0, 
+                     areas.axesLabels.x()+23, (areas.axes.y() + (i * incr) + topMargin ) -7,
+                     areas.axesLabels.x()+16, (areas.axes.y() + (i * incr) + topMargin ) - 14, 
+                     BLACK);      
+
+    if (i == current_jog_axis) {
+      gfx.fillTriangle(areas.axesLabels.x()+16, (areas.axes.y() + (i * incr) + topMargin ) +0, 
+                       areas.axesLabels.x()+23, (areas.axes.y() + (i * incr) + topMargin ) -7,
+                       areas.axesLabels.x()+16, (areas.axes.y() + (i * incr) + topMargin ) - 14, 
+                       axisColour(i));
+    }  
     gfx.setTextColor(axisColour(i));
     gfx.setCursor(areas.axesLabels.x(), (areas.axes.y() + (i * incr) + topMargin ));     
     gfx.print(AXIS_NAME[i]);
-    //add an icon (triangle) to the current jog axis
   }           
 }
 

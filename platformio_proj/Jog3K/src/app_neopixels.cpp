@@ -31,7 +31,7 @@ void init_neopixels (void){
   pixels.clear(); // Set all pixel colors to 'off'
   pixels.setPixelColor(i,pixels.Color(run_color[0], run_color[1], run_color[2]));
   pixels.show();   // Send the updated pixel colors to the hardware.
-  //delay(1000);
+  delay(10);
 
   }
 

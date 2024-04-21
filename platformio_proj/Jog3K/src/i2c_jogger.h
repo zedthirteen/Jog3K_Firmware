@@ -472,6 +472,8 @@ enum CurrentJogAxis{
     Y,
     Z,
     A,
+    FOVER,
+    SOVER,
     NONE = 255,
 };
 
