@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <SerialTransfer.h>
 #ifndef PICO_DEFAULT_UART
 #define PICO_DEFAULT_UART 0
 #endif
@@ -53,8 +55,6 @@
 #include "hardware/gpio.h"
 #include "hardware/flash.h"
 #include "pico/time.h"
-
-
 #include "i2c_jogger.h"
 
 // RPI Pico
@@ -62,6 +62,20 @@
 int rc;
 
 volatile bool timer_fired = false;
+
+SerialTransfer packetTransfer;
+
+status_context_t status_context, count_context;
+
+machine_status_packet_t prev_statuspacket = {};
+
+machine_status_packet_t *statuspacket = (machine_status_packet_t*) status_context.mem;
+machine_status_packet_t *previous_statuspacket = &prev_statuspacket;
+
+pendant_count_packet_t prev_countpacket = {};
+
+pendant_count_packet_t *countpacket = (pendant_count_packet_t*) count_context.mem;
+pendant_count_packet_t *previous_countpacket = &prev_countpacket;
 
 void led_blinking_task(void)
 {
@@ -155,6 +169,54 @@ void setup() {
   // Init USB Host on native controller roothub port0
   USBHost.begin(0);
   SerialHost.begin(0,0);
+
+  packetTransfer.begin(SerialHost);
+
+}
+
+void transmit_data(void){
+  // use this variable to keep track of how many
+  // bytes we're stuffing in the transmit buffer
+  uint16_t sendSize = 0;
+
+  ///////////////////////////////////////// Stuff buffer with struct
+  sendSize = packetTransfer.txObj(statuspacket, sendSize);
+
+  ///////////////////////////////////////// Send buffer
+  packetTransfer.sendData(sendSize);
+}
+
+void receive_data(void){
+
+  const uint32_t interval_ms = 15;
+  static uint32_t start_ms = 0;
+  static unsigned long mils = 0;
+
+  if(packetTransfer.available())
+  {
+    // use this variable to keep track of how many
+    // bytes we've processed from the receive buffer
+    uint16_t recSize = 0;
+
+    recSize = packetTransfer.rxObj(countpacket, recSize);
+
+  } else{
+
+      //mils=millis();
+      //if ( (mils - start_ms) < interval_ms) return; // not enough time
+      //start_ms += interval_ms;
+
+      //Serial1.println("receive data loop\n");
+   
+    if(statuspacket->machine_state == MachineState_Disconnected){
+      simulation_mode = 1;
+    }
+
+    if(simulation_mode){
+      //process_simulation_mode();
+    }
+  
+  }
 }
 
 void loop() {

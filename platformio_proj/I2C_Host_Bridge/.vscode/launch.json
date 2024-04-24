@@ -12,11 +12,11 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-            "executable": "c:/repo/Jog3K_Firmware/Jog3K_Firmware/platformio_proj/I2C_Host_Bridge/.pio/build/pico/firmware.elf",
+            "executable": "c:/Repo/Jog3K_Firmware/platformio_proj/I2C_Host_Bridge/.pio/build/pico/firmware.elf",
             "projectEnvName": "pico",
-            "toolchainBinDir": "C:/Users/Andrew/.platformio/packages/toolchain-rp2040-earlephilhower/bin",
+            "toolchainBinDir": "C:/Users/andrew/.platformio/packages/toolchain-rp2040-earlephilhower/bin",
             "internalConsoleOptions": "openOnSessionStart",
-            "svdPath": "C:/Users/Andrew/.platformio/platforms/raspberrypi/misc/svd/rp2040.svd",
+            "svdPath": "C:/Users/andrew/.platformio/platforms/raspberrypi/misc/svd/rp2040.svd",
             "preLaunchTask": {
                 "type": "PlatformIO",
                 "task": "Pre-Debug"
@@ -26,21 +26,21 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-            "executable": "c:/repo/Jog3K_Firmware/Jog3K_Firmware/platformio_proj/I2C_Host_Bridge/.pio/build/pico/firmware.elf",
+            "executable": "c:/Repo/Jog3K_Firmware/platformio_proj/I2C_Host_Bridge/.pio/build/pico/firmware.elf",
             "projectEnvName": "pico",
-            "toolchainBinDir": "C:/Users/Andrew/.platformio/packages/toolchain-rp2040-earlephilhower/bin",
+            "toolchainBinDir": "C:/Users/andrew/.platformio/packages/toolchain-rp2040-earlephilhower/bin",
             "internalConsoleOptions": "openOnSessionStart",
-            "svdPath": "C:/Users/Andrew/.platformio/platforms/raspberrypi/misc/svd/rp2040.svd"
+            "svdPath": "C:/Users/andrew/.platformio/platforms/raspberrypi/misc/svd/rp2040.svd"
         },
         {
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (without uploading)",
-            "executable": "c:/repo/Jog3K_Firmware/Jog3K_Firmware/platformio_proj/I2C_Host_Bridge/.pio/build/pico/firmware.elf",
+            "executable": "c:/Repo/Jog3K_Firmware/platformio_proj/I2C_Host_Bridge/.pio/build/pico/firmware.elf",
             "projectEnvName": "pico",
-            "toolchainBinDir": "C:/Users/Andrew/.platformio/packages/toolchain-rp2040-earlephilhower/bin",
+            "toolchainBinDir": "C:/Users/andrew/.platformio/packages/toolchain-rp2040-earlephilhower/bin",
             "internalConsoleOptions": "openOnSessionStart",
-            "svdPath": "C:/Users/Andrew/.platformio/platforms/raspberrypi/misc/svd/rp2040.svd",
+            "svdPath": "C:/Users/andrew/.platformio/platforms/raspberrypi/misc/svd/rp2040.svd",
             "loadMode": "manual"
         }
     ]

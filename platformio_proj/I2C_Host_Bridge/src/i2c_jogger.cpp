@@ -68,13 +68,13 @@ uint8_t status_addr = 0;
 uint8_t key_pressed = 0;
 //extern uint8_t key_character;
 
-Memory_context context;
+//Memory_context context;
 
-Machine_status_packet *packet = (Machine_status_packet*) context.mem;
-Machine_status_packet prev_packet;
-Machine_status_packet *previous_packet = &prev_packet;
+//Machine_status_packet *packet = (Machine_status_packet*) context.mem;
+//Machine_status_packet prev_packet;
+//Machine_status_packet *previous_packet = &prev_packet;
 
-char *ram_ptr = (char*) &context.mem[0];
+//char *ram_ptr = (char*) &context.mem[0];
 int character_sent;
 int command_error = 0;
 
@@ -83,23 +83,24 @@ int command_error = 0;
 static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
     switch (event) {
     case I2C_SLAVE_RECEIVE: // master has written some data
-        if (!context.mem_address_written) {
+        if (!status_context.mem_address_written) {
             // writes always start with the memory address
-            context.mem_address = i2c_read_byte(i2c);
-            context.mem_address_written = true;
+            status_context.mem_address = i2c_read_byte(i2c);
+            status_context.mem_address_written = true;
         } else {
             // save into memory
-            context.mem[context.mem_address] = i2c_read_byte(i2c);
-            context.mem_address++;
+            status_context.mem[status_context.mem_address] = i2c_read_byte(i2c);
+            status_context.mem_address++;
         }
         break;
     case I2C_SLAVE_REQUEST: // master is requesting data
         // load from memory
-        i2c_write_byte(i2c, context.mem[context.mem_address]);
-        context.mem_address++;
+        i2c_write_byte(i2c, count_context.mem[count_context.mem_address]);
+        count_context.mem_address++;
         break;
     case I2C_SLAVE_FINISH: // master has signalled Stop / Restart
-        context.mem_address_written = false;
+        count_context.mem_address_written = false;
+        status_context.mem_address_written = false;
         break;
     default:
         break;
@@ -150,7 +151,8 @@ static void setup_slave() {
     i2c_slave_init(i2c0, I2C_SLAVE_ADDRESS, &i2c_slave_handler);
 }
 
-uint8_t keypad_sendchar (uint8_t character, bool clearpin) {
+
+uint8_t keypad_sendcount (bool clearpin) {
   //maybe use key_pressed variable to avoid spamming?
   int timeout = I2C_TIMEOUT_VALUE;
 
@@ -158,15 +160,15 @@ uint8_t keypad_sendchar (uint8_t character, bool clearpin) {
 
   gpio_put(ONBOARD_LED, 1);
 
-  while (context.mem_address_written != false && context.mem_address>0);
+  while (count_context.mem_address_written != false && count_context.mem_address>0);
 
-    context.mem[0] = character;
-    context.mem_address = 0;
+    //context.mem[0] = character;
+    count_context.mem_address = 0;
     //gpio_put(KPSTR_PIN, false);
     //sleep_ms(100);
     gpio_put(KPSTR_PIN, true);
     sleep_ms(1);
-    while (context.mem_address == 0 && timeout){
+    while (count_context.mem_address == 0 && timeout){
       sleep_us(1000);      
       timeout = timeout - 1;}
 
@@ -180,6 +182,8 @@ uint8_t keypad_sendchar (uint8_t character, bool clearpin) {
   gpio_put(ONBOARD_LED, 0);
   return true;
 };
+
+
 
 void kpstr_clear (void) {
   gpio_put(KPSTR_PIN, false);
@@ -217,12 +221,12 @@ static char *map_coord_system (coord_system_id_t id)
 }
 
 void i2c_task (void){
-//
+
 }
 
 void init_i2c_responder (void){
 
-  Machine_status_packet *previous_packet = &prev_packet;
+  //Machine_status_packet *previous_packet = &prev_packet;
   uint8_t key_character = '\0';
 
   gpio_init(KPSTR_PIN);
@@ -246,8 +250,8 @@ void init_i2c_responder (void){
   //Wire.onRequest(i2c_request_handler);
   //Wire.onFinish(i2c_finish_handler);
   //Wire.begin();
-  packet->machine_state = 255;
-  key_character = CMD_FEED_HOLD;
-  keypad_sendchar (key_character, 1);
+  //packet->machine_state = 255;
+  //key_character = CMD_FEED_HOLD;
+  //keypad_sendchar (key_character, 1);
 
 }

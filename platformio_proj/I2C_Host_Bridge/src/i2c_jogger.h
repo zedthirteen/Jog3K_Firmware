@@ -1,9 +1,8 @@
 #ifndef __I2C_JOGGER_H__
 #define __I2C_JOGGER_H__
 
-#include <stdint.h>
-
 #define PROTOCOL_VERSION 1
+
 #define REDLED 21
 #define GREENLED 22
 
@@ -17,33 +16,34 @@
 #define CYCLEDELAY 12 // Time to wait after a cycle
 #define NEO_BRIGHTNESS 10
 
+#define NUMBER_OF_AXES 3
+
 //flash defines
 #define FLASH_TARGET_OFFSET (256 * 1024)
 //extern const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 extern const uint8_t *flash_target_contents;
 
-#define STATE_ALARM         1 //!< In alarm state. Locks out all g-code processes. Allows settings access.
-#define STATE_CYCLE         2 //!< Cycle is running or motions are being executed.
-#define STATE_HOLD          3 //!< Active feed hold
-#define STATE_TOOL_CHANGE   4 //!< Manual tool change, similar to #STATE_HOLD - but stops spindle and allows jogging.
-#define STATE_IDLE          5 //!< Must be zero. No flags.
-#define STATE_HOMING        6 //!< Performing homing cycle
-#define STATE_JOG           7 //!< Jogging mode.
-
-#define OLED_WIDTH 128
-#define OLED_HEIGHT 64
-
 //neopixel led locations
-#define RAISELED 0
-#define JOGLED 1
-#define SPINLED 2
-#define FEEDLED 3
-#define HALTLED 4
-#define HOLDLED 5
-#define RUNLED 6
-#define SPINDLELED 7
-#define COOLED 8
-#define HOMELED 9
+#define SYSLED 0
+#define SELLED 1
+#define LEFTLED 2
+#define DOWNLED 3
+#define LOWERLED 4
+#define RIGHTLED 5
+#define RAISELED 6
+#define UPLED 7
+#define HOMELED 8
+#define SPINDLELED 9
+#define SEL2LED 10
+#define SPINLED 11
+#define SPINLED1 12
+#define MISTLED 13
+#define HOLDLED 14
+#define HALTLED 15
+#define RUNLED 16
+#define COOLED 17
+#define FEEDLED 18
+#define FEEDLED1 19
 
 #define HALTBUTTON 13
 #define RUNBUTTON 14
@@ -66,6 +66,42 @@ extern const uint8_t *flash_target_contents;
 #define FLOODBUTTON 15
 #define MISTBUTTON 11
 #define HOMEBUTTON 28
+
+//button masks
+#define halt_pressed = 0;
+#define hold_pressed = 1;
+#define cycle_start_pressed = 2;
+#define alt_hold_pressed = 16;
+#define alt_halt_pressed = 15;
+#define alt_cycle_start_pressed = 17;
+
+#define spindle_over_reset_pressed = 7;
+#define feed_over_reset_pressed = 8;
+#define alt_spindle_over_reset_pressed = 22;
+#define alt_feed_over_reset_pressed = 23;
+
+#define spindle_pressed = 3;
+#define mist_pressed = 4;
+#define flood_pressed = 5;
+#define home_pressed = 6;
+#define alt_spindle_pressed = 18;
+#define alt_mist_pressed = 19;
+#define alt_flood_pressed = 20;
+#define alt_home_pressed = 21;
+
+#define up_pressed = 9;
+#define down_pressed = 10;
+#define left_pressed = 11;
+#define right_pressed = 12;
+#define raise_pressed = 13;
+#define lower_pressed = 14;
+
+#define alt_up_pressed = 24;
+#define alt_down_pressed = 25;
+#define alt_left_pressed = 26;
+#define alt_right_pressed = 27;
+#define alt_lower_pressed = 28;
+#define alt_raise_pressed = 29;
 
 #define TICK_TIMER_PERIOD 5
 
@@ -108,116 +144,11 @@ extern const uint8_t *flash_target_contents;
 #define JOG_XLZU JOG_XL | JOG_ZU
 #define JOG_XLZD JOG_XL | JOG_ZD*/
 
-#define CHAR_XR   'R'
-#define CHAR_XL   'L'
-#define CHAR_YF   'F'
-#define CHAR_YB   'B'
-#define CHAR_ZU   'U'
-#define CHAR_ZD   'D'
-#define CHAR_XRYF 'r'
-#define CHAR_XRYB 'q'
-#define CHAR_XLYF 's'
-#define CHAR_XLYB 't'
-#define CHAR_XRZU 'w'
-#define CHAR_XRZD 'v'
-#define CHAR_XLZU 'u'
-#define CHAR_XLZD 'x'
-#define CHAR_AR   'A'
-#define CHAR_AL   'a'
-
-#define CMD_STATUS_REPORT_LEGACY '?'
-#define CMD_CYCLE_START 0x81   // TODO: use 0x06 ctrl-F ACK instead? or SYN/DC2/DC3?
-#define CMD_FEED_HOLD 0x82     // TODO: use 0x15 ctrl-U NAK instead?
-#define CMD_RESET 0x18 // ctrl-X (CAN)
-#define CMD_SAFETY_DOOR 0x84
-#define CMD_OVERRIDE_FAN0_TOGGLE 0x8A       // Toggle Fan 0 on/off, not implemented by the core.
-#define CMD_MPG_MODE_TOGGLE 0x8B            // Toggle MPG mode on/off, not implemented by the core.
-#define CMD_AUTO_REPORTING_TOGGLE 0x8C      // Toggle auto real time reporting if configured.
-#define CMD_OVERRIDE_FEED_RESET 0x90        // Restores feed override value to 100%.
-#define CMD_OVERRIDE_FEED_COARSE_PLUS 0x91
-#define CMD_OVERRIDE_FEED_COARSE_MINUS 0x92
-#define CMD_OVERRIDE_FEED_FINE_PLUS 0x93
-#define CMD_OVERRIDE_FEED_FINE_MINUS 0x94
-#define CMD_OVERRIDE_RAPID_RESET 0x95       // Restores rapid override value to 100%.
-#define CMD_OVERRIDE_RAPID_MEDIUM 0x96
-#define CMD_OVERRIDE_RAPID_LOW 0x97
-#define CMD_OVERRIDE_SPINDLE_RESET 0x99     // Restores spindle override value to 100%.
-#define CMD_OVERRIDE_SPINDLE_COARSE_PLUS 0x9A
-#define CMD_OVERRIDE_SPINDLE_COARSE_MINUS 0x9B
-#define CMD_OVERRIDE_SPINDLE_FINE_PLUS 0x9C
-#define CMD_OVERRIDE_SPINDLE_FINE_MINUS 0x9D
-#define CMD_OVERRIDE_SPINDLE_STOP 0x9E
-#define CMD_OVERRIDE_COOLANT_FLOOD_TOGGLE 'C'
-#define CMD_OVERRIDE_COOLANT_MIST_TOGGLE 'M'
-#define CMD_PID_REPORT 0xA2
-#define CMD_TOOL_ACK 0xA3
-#define CMD_PROBE_CONNECTED_TOGGLE 0xA4
-
 // The slave implements a 256 byte memory. To write a series of bytes, the master first
 // writes the memory address, followed by the data. The address is automatically incremented
 // for each byte transferred, looping back to 0 upon reaching the end. Reading is done
 // sequentially from the current memory address.
 #define I2C_TIMEOUT_VALUE 100
-
-// Alarm executor codes. Valid values (1-255). Zero is reserved.
-typedef enum {
-    Alarm_None = 0,
-    Alarm_HardLimit = 1,
-    Alarm_SoftLimit = 2,
-    Alarm_AbortCycle = 3,
-    Alarm_ProbeFailInitial = 4,
-    Alarm_ProbeFailContact = 5,
-    Alarm_HomingFailReset = 6,
-    Alarm_HomingFailDoor = 7,
-    Alarm_FailPulloff = 8,
-    Alarm_HomingFailApproach = 9,
-    Alarm_EStop = 10,
-    Alarm_HomingRequried = 11,
-    Alarm_LimitsEngaged = 12,
-    Alarm_ProbeProtect = 13,
-    Alarm_Spindle = 14,
-    Alarm_HomingFailAutoSquaringApproach = 15,
-    Alarm_SelftestFailed = 16,
-    Alarm_MotorFault = 17,
-    Alarm_AlarmMax = Alarm_MotorFault
-} alarm_code_t;
-
-enum Jogmode {FAST = 0,
-              SLOW = 1,
-              STEP = 2};
-
-extern enum Jogmode current_jogmode;
-
-enum Jogmodify {
-    JogModify_1 = 0,
-    JogModify_01  = 1,
-    JogModify_001 = 2
-};
-extern enum Jogmodify current_jogmodify;
-
-typedef union {
-    uint8_t value;                 //!< Bitmask value
-    uint8_t mask;                  //!< Synonym for bitmask value
-    struct {
-        uint8_t flood          :1, //!< Flood coolant.
-                mist           :1, //!< Mist coolant, optional.
-                shower         :1, //!< Shower coolant, currently unused.
-                trough_spindle :1, //!< Through spindle coolant, currently unused.
-                unused         :4;
-    };
-} coolant_state_t;
-
-// Define spindle stop override control states.
-typedef union {
-    uint8_t value;
-    struct {
-        uint8_t enabled       :1,
-                initiate      :1,
-                restore       :1,
-                restore_cycle :1,
-                unassigned    :4;
-    };
-} spindle_stop_t;
 
 typedef enum {
     CoordinateSystem_G54 = 0,                       //!< 0 - G54 (G12)
@@ -238,92 +169,338 @@ typedef enum {
     N_CoordinateSystems                             //!< 12 when #COMPATIBILITY_LEVEL <= 1, 9 otherwise
 } coord_system_id_t;
 
+
+//typedef uint8_t msg_type_t;
+//typedef uint8_t machine_state_t;
+
+enum msg_type_t {
+    MachineMsg_None = 0,
+// 1-127 reserved for message string length
+    MachineMsg_Comment = 252,
+    MachineMsg_Overrides = 253,
+    MachineMsg_WorkOffset = 254,
+    MachineMsg_ClearMessage = 255,
+};
+
+#define STATE_DISCONNECTED  0
+#define STATE_ALARM         1 //!< In alarm state. Locks out all g-code processes. Allows settings access.
+#define STATE_CYCLE         2 //!< Cycle is running or motions are being executed.
+#define STATE_HOLD          3 //!< Active feed hold
+#define STATE_TOOL_CHANGE   4 //!< Manual tool change, similar to #STATE_HOLD - but stops spindle and allows jogging.
+#define STATE_IDLE          5 //!< Must be zero. No flags.
+#define STATE_HOMING        6 //!< Performing homing cycle
+#define STATE_JOG           7 //!< Jogging mode.
+
+enum machine_state_t {
+    MachineState_Disconnected = 0,
+    MachineState_Alarm = 1,
+    MachineState_Cycle = 2,
+    MachineState_Hold = 3,
+    MachineState_ToolChange = 4,
+    MachineState_Idle = 5,
+    MachineState_Homing = 6,
+    MachineState_Jog = 7,
+    MachineState_Other = 254
+};
+
+//static_assert(sizeof(msg_type_t) == 1, "msg_type_t too large for I2C display interface");
+//static_assert(sizeof(machine_state_t) == 1, "machine_state_t too large for I2C display interface");
+//static_assert(sizeof(coord_system_id_t) == 1, "coord_system_id_t too large for I2C display interface");
+
+#define JOGMODE_FAST 0
+#define JOGMODE_SLOW 1
+#define JOGMODE_STEP 2
+#define JOGMODE ROTATE 3
+#define JOGMODE_MAX 2
+#define JOGMODIFY_MAX 3
+
+
+typedef union {
+    uint8_t value;
+    struct {
+        uint8_t modifier :4,
+                mode     :4;
+    };
+} jog_mode_t;
+
+typedef union {
+    uint8_t value;
+    struct {
+        uint8_t diameter       :1,
+                mpg            :1,
+                homed          :1,
+                tlo_referenced :1,
+                mode           :3; // from machine_mode_t setting
+    };
+} machine_modes_t;
+
+typedef union {
+    float values[4];
+    struct {
+        float x;
+        float y;
+        float z;
+        float a;
+    };
+} machine_coords_t;
+
+typedef union {
+    uint8_t mask;
+    uint8_t value;
+    struct {
+        uint8_t x :1,
+                y :1,
+                z :1,
+                a :1,
+                b :1,
+                c :1,
+                u :1,
+                v :1;
+    };
+} axes_signals_t;
+
+typedef union {
+    uint8_t value;
+    uint8_t mask;
+    struct {
+        uint8_t on               :1,
+                ccw              :1,
+                pwm              :1, //!< NOTE: only used for PWM inversion setting
+                reserved         :1,
+                override_disable :1,
+                encoder_error    :1,
+                at_speed         :1, //!< Spindle is at speed.
+                synchronized     :1;
+    };
+} spindle_state_t;
+
+typedef union {
+    uint8_t value;                 //!< Bitmask value
+    uint8_t mask;                  //!< Synonym for bitmask value
+    struct {
+        uint8_t flood          :1, //!< Flood coolant.
+                mist           :1, //!< Mist coolant, optional.
+                shower         :1, //!< Shower coolant, currently unused.
+                trough_spindle :1, //!< Through spindle coolant, currently unused.
+                unused         :4;
+    };
+} coolant_state_t;
+
+typedef union {
+    uint16_t value;
+    uint16_t mask;
+    struct {
+        uint16_t reset              :1,
+                 feed_hold          :1,
+                 cycle_start        :1,
+                 safety_door_ajar   :1,
+                 block_delete       :1,
+                 stop_disable       :1, //! M1
+                 e_stop             :1,
+                 probe_disconnected :1,
+                 motor_fault        :1,
+                 motor_warning      :1,
+                 limits_override    :1,
+                 single_block       :1,
+                 unassigned         :1,
+                 probe_overtravel   :1, //! used for probe protection
+                 probe_triggered    :1, //! used for probe protection
+                 deasserted         :1; //! this flag is set if signals are deasserted. Note: do NOT pass on to the control_interrupt_handler if set.
+    };
+} control_signals_t;
+
+// Define Grbl status codes. Valid values (0-255)
+typedef enum {
+    Status_OK = 0,
+    Status_ExpectedCommandLetter = 1,
+    Status_BadNumberFormat = 2,
+    Status_InvalidStatement = 3,
+    Status_NegativeValue = 4,
+    Status_HomingDisabled = 5,
+    Status_SettingStepPulseMin = 6,
+    Status_SettingReadFail = 7,
+    Status_IdleError = 8,
+    Status_SystemGClock = 9,
+    Status_SoftLimitError = 10,
+    Status_Overflow = 11,
+    Status_MaxStepRateExceeded = 12,
+    Status_CheckDoor = 13,
+    Status_LineLengthExceeded = 14,
+    Status_TravelExceeded = 15,
+    Status_InvalidJogCommand = 16,
+    Status_SettingDisabledLaser = 17,
+    Status_Reset = 18,
+    Status_NonPositiveValue = 19,
+
+    Status_GcodeUnsupportedCommand = 20,
+    Status_GcodeModalGroupViolation = 21,
+    Status_GcodeUndefinedFeedRate = 22,
+    Status_GcodeCommandValueNotInteger = 23,
+    Status_GcodeAxisCommandConflict = 24,
+    Status_GcodeWordRepeated = 25,
+    Status_GcodeNoAxisWords = 26,
+    Status_GcodeInvalidLineNumber = 27,
+    Status_GcodeValueWordMissing = 28,
+    Status_GcodeUnsupportedCoordSys = 29,
+    Status_GcodeG53InvalidMotionMode = 30,
+    Status_GcodeAxisWordsExist = 31,
+    Status_GcodeNoAxisWordsInPlane = 32,
+    Status_GcodeInvalidTarget = 33,
+    Status_GcodeArcRadiusError = 34,
+    Status_GcodeNoOffsetsInPlane = 35,
+    Status_GcodeUnusedWords = 36,
+    Status_GcodeG43DynamicAxisError = 37,
+    Status_GcodeIllegalToolTableEntry = 38,
+    Status_GcodeValueOutOfRange = 39,
+    Status_GcodeToolChangePending = 40,
+    Status_GcodeSpindleNotRunning = 41,
+    Status_GcodeIllegalPlane = 42,
+    Status_GcodeMaxFeedRateExceeded = 43,
+    Status_GcodeRPMOutOfRange = 44,
+    Status_LimitsEngaged = 45,
+    Status_HomingRequired = 46,
+    Status_GCodeToolError = 47,
+    Status_ValueWordConflict = 48,
+    Status_SelfTestFailed = 49,
+    Status_EStop = 50,
+    Status_MotorFault = 51,
+    Status_SettingValueOutOfRange = 52,
+    Status_SettingDisabled = 53,
+    Status_GcodeInvalidRetractPosition = 54,
+    Status_IllegalHomingConfiguration = 55,
+    Status_GCodeCoordSystemLocked = 56,
+
+// Some error codes as defined in bdring's ESP32 port
+    Status_SDMountError = 60,
+    Status_SDReadError = 61,
+    Status_SDFailedOpenDir = 62,
+    Status_SDDirNotFound = 63,
+    Status_SDFileEmpty = 64,
+
+    Status_BTInitError = 70,
+
+//
+    Status_ExpressionUknownOp = 71,
+    Status_ExpressionDivideByZero = 72,
+    Status_ExpressionArgumentOutOfRange = 73,
+    Status_ExpressionInvalidArgument = 74,
+    Status_ExpressionSyntaxError = 75,
+    Status_ExpressionInvalidResult = 76,
+
+    Status_AuthenticationRequired = 77,
+    Status_AccessDenied = 78,
+    Status_NotAllowedCriticalEvent = 79,
+
+    Status_FlowControlNotExecutingMacro = 80,
+    Status_FlowControlSyntaxError = 81,
+    Status_FlowControlStackOverflow = 82,
+    Status_FlowControlOutOfMemory = 83,
+
+    Status_Unhandled, // For internal use only
+    Status_StatusMax = Status_Unhandled
+} __attribute__ ((__packed__)) status_code_t;
+
+typedef struct {
+    uint16_t address;
+    machine_state_t machine_state;
+    uint8_t machine_substate;
+    axes_signals_t home_state;
+    uint16_t feed_override; // size changed in latest version!
+    uint16_t spindle_override;
+    uint8_t spindle_stop;
+    spindle_state_t spindle_state;
+    int spindle_rpm;
+    float feed_rate;
+    coolant_state_t coolant_state;
+    jog_mode_t jog_mode;
+    control_signals_t signals;
+    float jog_stepsize;
+    coord_system_id_t current_wcs;  //active WCS or MCS modal state
+    axes_signals_t limits;
+    status_code_t status_code;
+    machine_modes_t machine_modes;
+    machine_coords_t coordinate;
+    msg_type_t msgtype; //<! 1 - 127 -> msg[] contains a string msgtype long
+    uint8_t msg[128];
+} machine_status_packet_t;
+
+#define MINVAL -9999.99
+#define MAXVAL 9999.99
+
+typedef struct {
+int32_t uptime;
+jog_mode_t jog_mode;
+int32_t feed_over;
+int32_t spindle_over;
+int32_t rapid_over;
+uint32_t buttons;
+float feedrate; 
+float spindle_rpm; 
+float x_axis;
+float y_axis;
+float z_axis;
+float a_axis;
+} pendant_count_packet_t;
+
+typedef struct
+{
+    uint8_t mem[1024];
+    uint16_t mem_address;
+    bool mem_address_written;
+} status_context_t;
+
 enum ScreenMode{
-    DEFAULT = 0,
+    none,
     JOGGING,
     HOMING,
     RUN,
     HOLD,
     JOG_MODIFY,
     TOOL_CHANGE,
-    ALARM
+    ALARM,
+    DISCONNECTED = 255,
 };
 
-typedef struct Machine_status_packet {
-uint8_t address;
-uint8_t machine_state;
-uint8_t alarm;
-uint8_t home_state;
-uint8_t feed_override;
-uint8_t spindle_override;
-uint8_t spindle_stop;
-uint8_t spindle_load;
-float spindle_power;
-int spindle_rpm;
-float feed_rate;
-coolant_state_t coolant_state;
-uint8_t jog_mode;  //includes both modifier as well as mode
-float jog_stepsize;
-coord_system_id_t current_wcs;  //active WCS or MCS modal state
-float x_coordinate;
-float y_coordinate;
-float z_coordinate;
-float a_coordinate;
-} Machine_status_packet;
+enum CurrentJogAxis{
+    X,
+    Y,
+    Z,
+    A,
+    FOVER,
+    SOVER,
+    NONE = 255,
+};
 
-#define OVERRIDE_INCREMENT 10
-typedef struct Pendant_count_packet {
-int32_t uptime;
-uint8_t feed_over;
-uint8_t spindle_over;
-uint8_t rapid_over;
-uint32_t buttons;
-int32_t x_axis;
-int32_t y_axis;
-int32_t z_axis;
-int32_t a_axis;
-} Pendant_count_packet;
+extern status_context_t status_context, count_context;
 
-//maximum jogging accelerations
-typedef struct Pendant_accel_packet {
-float x_axis;
-float y_axis;
-float z_axis;
-float a_axis;
-} Pendant_accel_packet;
+extern machine_status_packet_t prev_statuspacket;
 
-typedef struct Pendant_memory_map {
-    Machine_status_packet statuspacket;
-    Pendant_count_packet countpacket;
-    Pendant_accel_packet accelpacket;
-    char toolcomment[48];
-    //last 4 bytes are reserved for version info
-} Pendant_memory_map;
+extern machine_status_packet_t *statuspacket;
+extern machine_status_packet_t *previous_statuspacket;
 
-extern Pendant_memory_map * pendant_memory_ptr;
+extern pendant_count_packet_t prev_countpacket;
 
-extern Machine_status_packet prev_packet;
+extern pendant_count_packet_t *countpacket;
+extern pendant_count_packet_t *previous_countpacket;
 
 extern bool screenflip;
 extern int command_error;
 extern float step_calc;
 
-typedef struct
-{
-    uint8_t mem[256];
-    uint8_t mem_address;
-    bool mem_address_written;
-} Memory_context;
+extern ScreenMode screenmode;
+extern jog_mode_t current_jogmode;
+extern jog_mode_t previous_jogmode;
+extern ScreenMode previous_screenmode;
 
-extern Memory_context context;
-extern uint8_t key_character;
+//extern Adafruit_NeoPixel pixels;
+
+//device specific variables
+extern CurrentJogAxis current_jog_axis;
+extern CurrentJogAxis previous_jog_axis;
+extern uint8_t simulation_mode;
 
 void init_i2c_responder (void);
-void kpstr_clear (void);
-uint8_t keypad_sendchar (uint8_t character, bool clearpin);
-void i2c_task (void);
-
-void write_nvs (void);
+void i2c_task(void);
 
 #if defined(_LINUX_) && defined(__cplusplus)
 }
