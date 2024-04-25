@@ -295,7 +295,7 @@ void drawAxisCoord(uint8_t numaxes, coord_system_id_t current_wcs) { //[3]) {
 
 void setup_dro_readout(machine_status_packet_t *previous_packet, machine_status_packet_t *packet){
   static uint8_t numaxes = 0;
-  print_info_string("Draw DRO Info");
+  //print_info_string("Draw DRO Info");
   //change this to read the a coord and update to 3 or 4 axes
   numaxes = 3;
   setNumDrawnAxes(numaxes);

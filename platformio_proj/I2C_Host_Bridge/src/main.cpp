@@ -77,6 +77,9 @@ pendant_count_packet_t prev_countpacket = {};
 pendant_count_packet_t *countpacket = (pendant_count_packet_t*) count_context.mem;
 pendant_count_packet_t *previous_countpacket = &prev_countpacket;
 
+uint8_t simulation_mode;
+static void process_simulation_mode(void);
+
 void led_blinking_task(void)
 {
   const uint32_t interval_ms = 1000;
@@ -171,6 +174,7 @@ void setup() {
   SerialHost.begin(0,0);
 
   packetTransfer.begin(SerialHost);
+  simulation_mode = 0;
 
 }
 
@@ -178,12 +182,13 @@ void transmit_data(void){
   // use this variable to keep track of how many
   // bytes we're stuffing in the transmit buffer
   uint16_t sendSize = 0;
+  if (SerialHost.connected()){
+    ///////////////////////////////////////// Stuff buffer with struct
+    sendSize = packetTransfer.txObj(statuspacket, sendSize);
 
-  ///////////////////////////////////////// Stuff buffer with struct
-  sendSize = packetTransfer.txObj(statuspacket, sendSize);
-
-  ///////////////////////////////////////// Send buffer
-  packetTransfer.sendData(sendSize);
+    ///////////////////////////////////////// Send buffer
+    packetTransfer.sendData(sendSize);
+  }
 }
 
 void receive_data(void){
@@ -192,37 +197,42 @@ void receive_data(void){
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
 
-  if(packetTransfer.available())
-  {
-    // use this variable to keep track of how many
-    // bytes we've processed from the receive buffer
-    uint16_t recSize = 0;
+  if (SerialHost.connected() && SerialHost.available()) {
 
-    recSize = packetTransfer.rxObj(countpacket, recSize);
+    if(packetTransfer.available())
+    {
+      // use this variable to keep track of how many
+      // bytes we've processed from the receive buffer
+      uint16_t recSize = 0;
 
-  } else{
+      recSize = packetTransfer.rxObj(countpacket, recSize);
+
+    }
 
       //mils=millis();
       //if ( (mils - start_ms) < interval_ms) return; // not enough time
       //start_ms += interval_ms;
 
       //Serial1.println("receive data loop\n");
-   
+    
     if(statuspacket->machine_state == MachineState_Disconnected){
       simulation_mode = 1;
     }
 
     if(simulation_mode){
-      //process_simulation_mode();
+      process_simulation_mode();
     }
-  
   }
+
 }
+
 
 void loop() {
   led_blinking_task();
   USBHost.task();
-  forward_serial();
+  receive_data();
+  transmit_data();  
+  //forward_serial();
   Serial1.flush();
   i2c_task();
 }
@@ -380,3 +390,87 @@ void utf16_to_utf8(uint16_t *temp_buf, size_t buf_len) {
   ((uint8_t *) temp_buf)[utf8_len] = '\0';
 }
 
+static void process_simulation_mode(void){
+ 
+  static float fast_stepsize = 15000;
+  static float slow_stepsize = 1500;
+  static float step_stepsize = 1;
+
+  
+  //Serial1.println("jog_mode: ");
+  //Serial1.println(statuspacket->jog_mode.value, HEX);
+
+  //during simulation mode the status packet is updated in response to local operations.
+  //statuspacket->coordinate.x = countpacket->x_axis;
+  //statuspacket->coordinate.y = countpacket->y_axis;
+  //statuspacket->coordinate.z = countpacket->z_axis;
+  //statuspacket->coordinate.a = countpacket->a_axis;
+
+  statuspacket->feed_override = countpacket->feed_over;
+  statuspacket->spindle_override = countpacket->spindle_over;
+
+  if(statuspacket->machine_state == MachineState_Disconnected)
+    statuspacket->machine_state = MachineState_Idle;
+
+  statuspacket->jog_mode = countpacket->jog_mode;  
+  //cacluate jog stepsize
+  switch (statuspacket->jog_mode.mode){
+    case JOGMODE_FAST :
+        statuspacket->jog_stepsize = fast_stepsize; 
+    break;
+    case JOGMODE_SLOW :
+        statuspacket->jog_stepsize = slow_stepsize;       
+    break;
+    case JOGMODE_STEP :
+        statuspacket->jog_stepsize = step_stepsize;      
+    break;        
+  }
+
+  //if(previous_countpacket->feedrate != countpacket->feedrate){
+    statuspacket->jog_stepsize = statuspacket->jog_stepsize+countpacket->feedrate;
+  //}  
+
+  switch (statuspacket->jog_mode.modifier){
+    case 0 :
+      statuspacket->jog_stepsize = statuspacket->jog_stepsize;
+    break;
+    case 1 :
+      statuspacket->jog_stepsize = statuspacket->jog_stepsize/10;
+    break;
+    case 2 :
+      statuspacket->jog_stepsize = statuspacket->jog_stepsize/100;
+    break;
+    case 3 :
+      statuspacket->jog_stepsize = statuspacket->jog_stepsize/1000;
+    break;              
+  } 
+
+  switch (statuspacket->jog_mode.mode){
+    case JOGMODE_FAST :
+      statuspacket->coordinate.x = countpacket->x_axis*10;
+      statuspacket->coordinate.y = countpacket->y_axis*10;
+      statuspacket->coordinate.z = countpacket->z_axis*10;
+      statuspacket->coordinate.a = countpacket->a_axis*10;      
+    break;
+    case JOGMODE_SLOW :
+      statuspacket->coordinate.x = countpacket->x_axis;
+      statuspacket->coordinate.y = countpacket->y_axis;
+      statuspacket->coordinate.z = countpacket->z_axis;
+      statuspacket->coordinate.a = countpacket->a_axis;         
+    break;
+    case JOGMODE_STEP :
+      statuspacket->coordinate.x = countpacket->x_axis*statuspacket->jog_stepsize;
+      statuspacket->coordinate.y = countpacket->y_axis*statuspacket->jog_stepsize;
+      statuspacket->coordinate.z = countpacket->z_axis*statuspacket->jog_stepsize;
+      statuspacket->coordinate.a = countpacket->a_axis*statuspacket->jog_stepsize;         
+    break;        
+  }
+  
+  if(previous_countpacket->spindle_rpm != countpacket->spindle_rpm)
+    statuspacket->spindle_rpm = countpacket->spindle_rpm;
+
+  *previous_countpacket = *countpacket;
+
+  //buttons just set the state directly.  Jog buttons set jogging state.  Run, hold halt set their states (halt sets alarm) etc.
+  //pressing alt-spindle sets tool change state.
+}

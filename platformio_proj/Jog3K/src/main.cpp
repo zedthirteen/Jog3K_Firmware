@@ -112,8 +112,8 @@ void receive_data(void){
       simulation_mode = 1;
     }
 
-    if(simulation_mode)
-      process_simulation_mode();
+    //if(simulation_mode)
+      //process_simulation_mode();
   
   }
 }
@@ -153,7 +153,7 @@ void loop() {
   
   //Serial1.write("read encoders\r\n");
   receive_data();
-  //transmit_data();
+  transmit_data();
   periodic_task();
 }
 

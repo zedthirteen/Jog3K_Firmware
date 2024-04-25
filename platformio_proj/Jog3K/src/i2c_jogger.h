@@ -183,6 +183,7 @@ typedef enum {
 enum msg_type_t {
     MachineMsg_None = 0,
 // 1-127 reserved for message string length
+    MachineMsg_Comment = 252,
     MachineMsg_Overrides = 253,
     MachineMsg_WorkOffset = 254,
     MachineMsg_ClearMessage = 255,
