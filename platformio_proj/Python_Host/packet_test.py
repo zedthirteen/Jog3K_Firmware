@@ -2,10 +2,12 @@ from time import sleep
 from pySerialTransfer import pySerialTransfer as txfer
 from MachineStatusPacket import MachineStatusPacket, example_binary_data
 
+import array
+
 x = MachineStatusPacket.parse(bytes(MachineStatusPacket.sizeof()))
 
-x.address = 6283
-x.machine_state = 1
+x.address = 1
+x.machine_state = 5
 x.machine_substate = 0
 x.home_state = 0xFF
 x.feed_override = 125
@@ -35,27 +37,73 @@ converted = [hex(byte) for byte in packed_byte_array]
 if __name__ == '__main__':
     try:
         testStruct = packed_byte_array
-        print(testStruct)
-        
+        string = array.array('B',testStruct)
         
         link = txfer.SerialTransfer('COM16')
         
         link.open()
         #sleep(1)
-    
-
-        sendSize = 0
-        print(sendSize)
         
-        for index in range(MachineStatusPacket.sizeof()):
-            link.txBuff[index] = testStruct[index]
+        # stuff the TX buffer (https://docs.python.org/3/library/struct.html#format-characters)
+        send_len = 0
+        print(send_len)
+        send_len = link.tx_obj(x.address,       	    send_len, val_type_override='H')
+        print(send_len)
+        send_len = link.tx_obj(x.machine_state,        send_len, val_type_override='B')
+        print(send_len)
+        send_len = link.tx_obj(x.machine_substate,     send_len, val_type_override='B')
+        print(send_len)
+        send_len = link.tx_obj(x.home_state,           send_len, val_type_override='B')
+        print(send_len)
+        send_len = link.tx_obj(x.feed_override,        send_len, val_type_override='H')
+        print(send_len)
+        send_len = link.tx_obj(x.spindle_override,     send_len, val_type_override='H')
+        print(send_len)
+        send_len = link.tx_obj(x.spindle_stop,         send_len, val_type_override='B')
+        print(send_len)
+        send_len = link.tx_obj(x.spindle_state, 	   send_len, val_type_override='B')
+        print(send_len)
+        send_len = link.tx_obj(x.spindle_rpm,          send_len, val_type_override='i')
+        print(send_len)
+        send_len = link.tx_obj(x.feed_rate,       	   send_len, val_type_override='f')
+        print(send_len)
+        send_len = link.tx_obj(x.coolant_state,        send_len, val_type_override='B')
+        print(send_len)
+        send_len = link.tx_obj(x.jog_mode,             send_len, val_type_override='B')
+        print(send_len)
+        send_len = link.tx_obj(x.control_signals,      send_len, val_type_override='I')
+        print(send_len)
+        send_len = link.tx_obj(x.jog_stepsize,         send_len, val_type_override='f')
+        print(send_len)
+        send_len = link.tx_obj(x.current_wcs,    	   send_len, val_type_override='B')
+        print(send_len)
+        send_len = link.tx_obj(x.axes_limits,          send_len, val_type_override='B')
+        print(send_len)
+        send_len = link.tx_obj(x.status_code, 		   send_len, val_type_override='B')
+        print(send_len)
+        send_len = link.tx_obj(x.machine_mode,         send_len, val_type_override='B')
+        print(send_len)
+        send_len = link.tx_obj(x.x_coordinate,         send_len, val_type_override='f')
+        print(send_len)
+        send_len = link.tx_obj(x.y_coordinate,         send_len, val_type_override='f')
+        print(send_len)
+        send_len = link.tx_obj(x.z_coordinate,    	   send_len, val_type_override='f')
+        print(send_len)
+        send_len = link.tx_obj(x.a_coordinate,         send_len, val_type_override='f')
+        print(send_len)
+        send_len = link.tx_obj(x.message_type, 		   send_len, val_type_override='B')         
+        
+        #for index in range(MachineStatusPacket.sizeof()):
+        #    link.txBuff[index] = testStruct[index]
             
-        #sendSize = link.tx_obj(testStruct, start_pos=sendSize)
+        #sendSize = link.tx_obj(string)
         #sendSize = link.tx_obj(testStruct.y, start_pos=sendSize)
-        sendSize = MachineStatusPacket.sizeof()
-        print(sendSize)
+        #sendSize = MachineStatusPacket.sizeof()
+        print(send_len)
+        print(testStruct)
         
-        link.send(sendSize)
+        # send the data
+        link.send(send_len)
         
     except KeyboardInterrupt:
         link.close()
