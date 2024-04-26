@@ -400,7 +400,7 @@ typedef enum {
     Status_StatusMax = Status_Unhandled
 } __attribute__ ((__packed__)) status_code_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint16_t address;
     machine_state_t machine_state;
     uint8_t machine_substate;
@@ -427,7 +427,7 @@ typedef struct {
 #define MINVAL -9999.99
 #define MAXVAL 9999.99
 
-typedef struct {
+typedef struct __attribute__((packed)) {
 int32_t uptime;
 jog_mode_t jog_mode;
 int32_t feed_over;

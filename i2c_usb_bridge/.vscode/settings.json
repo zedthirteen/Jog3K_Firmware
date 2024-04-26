@@ -22,6 +22,7 @@
         "ss_oled.h": "c",
         "ds4_app.h": "c",
         "hid_host.h": "c",
-        "usbh.h": "c"
+        "usbh.h": "c",
+        "board.h": "c"
     }
 }

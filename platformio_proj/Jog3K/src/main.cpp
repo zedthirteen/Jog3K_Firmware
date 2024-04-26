@@ -77,13 +77,17 @@ void setup() {
 void transmit_data(void){
   // use this variable to keep track of how many
   // bytes we're stuffing in the transmit buffer
-  uint16_t sendSize = 0;
 
-  ///////////////////////////////////////// Stuff buffer with struct
-  sendSize = packetTransfer.txObj(countpacket, sendSize);
+  if(Serial.availableForWrite()){
+    uint16_t sendSize = 0;
 
-  ///////////////////////////////////////// Send buffer
-  packetTransfer.sendData(sendSize);
+    ///////////////////////////////////////// Stuff buffer with struct
+    sendSize = packetTransfer.txObj(countpacket, sendSize);
+
+    ///////////////////////////////////////// Send buffer
+    packetTransfer.sendData(sendSize);
+  }
+  
 }
 
 void receive_data(void){
@@ -92,15 +96,19 @@ void receive_data(void){
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
 
-  if(packetTransfer.available())
-  {
-    // use this variable to keep track of how many
-    // bytes we've processed from the receive buffer
-    uint16_t recSize = 0;
+  if (Serial.available()) {
 
-    recSize = packetTransfer.rxObj(statuspacket, recSize);
+    if(packetTransfer.available())
+    {
+      // use this variable to keep track of how many
+      // bytes we've processed from the receive buffer
+      uint16_t recSize = 0;
 
-  } else{
+      recSize = packetTransfer.rxObj(statuspacket, recSize );
+
+    } 
+  }
+  else{
 
       //mils=millis();
       //if ( (mils - start_ms) < interval_ms) return; // not enough time
@@ -109,7 +117,7 @@ void receive_data(void){
       //Serial1.println("receive data loop\n");
    
     if(statuspacket->machine_state == MachineState_Disconnected){
-      simulation_mode = 1;
+      //simulation_mode = 1;
     }
 
     //if(simulation_mode)
@@ -153,7 +161,7 @@ void loop() {
   
   //Serial1.write("read encoders\r\n");
   receive_data();
-  transmit_data();
+  //transmit_data();
   periodic_task();
 }
 

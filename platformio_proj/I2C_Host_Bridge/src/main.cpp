@@ -65,6 +65,8 @@ volatile bool timer_fired = false;
 
 SerialTransfer packetTransfer;
 
+float num = 0;
+
 status_context_t status_context, count_context;
 
 machine_status_packet_t prev_statuspacket = {};
@@ -82,7 +84,7 @@ static void process_simulation_mode(void);
 
 void led_blinking_task(void)
 {
-  const uint32_t interval_ms = 1000;
+  static const uint32_t interval_ms = 1000;
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
 
@@ -182,20 +184,37 @@ void transmit_data(void){
   // use this variable to keep track of how many
   // bytes we're stuffing in the transmit buffer
   uint16_t sendSize = 0;
-  if (SerialHost.connected()){
+
+  static const uint32_t interval_ms2 = 500;
+  static uint32_t start_ms2 = 0;
+  static unsigned long mils2 = 0;
+
+  mils2=millis();
+  if ( (mils2 - start_ms2) < interval_ms2) return; // not enough time
+  start_ms2 += interval_ms2;
+
+  
+  if (SerialHost.connected() && SerialHost.availableForWrite()){
+
+    statuspacket->coordinate.x = num * 0.1;
+    statuspacket->coordinate.y = num * 10;
+    statuspacket->coordinate.z = num * -1;
+
+    num = num + 1;
+
     ///////////////////////////////////////// Stuff buffer with struct
+    //sendSize = packetTransfer.txObj(statuspacket, sizeof(machine_status_packet_t));
     sendSize = packetTransfer.txObj(statuspacket, sendSize);
 
     ///////////////////////////////////////// Send buffer
     packetTransfer.sendData(sendSize);
   }
+
+
+  
 }
 
 void receive_data(void){
-
-  const uint32_t interval_ms = 15;
-  static uint32_t start_ms = 0;
-  static unsigned long mils = 0;
 
   if (SerialHost.connected() && SerialHost.available()) {
 
@@ -209,10 +228,6 @@ void receive_data(void){
 
     }
 
-      //mils=millis();
-      //if ( (mils - start_ms) < interval_ms) return; // not enough time
-      //start_ms += interval_ms;
-
       //Serial1.println("receive data loop\n");
     
     if(statuspacket->machine_state == MachineState_Disconnected){
@@ -220,7 +235,7 @@ void receive_data(void){
     }
 
     if(simulation_mode){
-      process_simulation_mode();
+      //process_simulation_mode();
     }
   }
 
@@ -230,10 +245,10 @@ void receive_data(void){
 void loop() {
   led_blinking_task();
   USBHost.task();
-  receive_data();
+  //receive_data();
   transmit_data();  
   //forward_serial();
-  Serial1.flush();
+  //Serial1.flush();
   i2c_task();
 }
 
