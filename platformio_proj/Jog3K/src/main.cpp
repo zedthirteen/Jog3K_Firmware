@@ -104,15 +104,18 @@ void receive_data(void){
       // bytes we've processed from the receive buffer
       uint16_t recSize = 0;
 
-      recSize = packetTransfer.rxObj(statuspacket, recSize );
+      Serial1.println("receive data\n");
+      Serial1.println(sizeof(machine_status_packet_t), DEC);
+
+      recSize = packetTransfer.rxObj(statuspacket, sizeof(machine_status_packet_t) );
 
     } 
   }
   else{
 
-      //mils=millis();
-      //if ( (mils - start_ms) < interval_ms) return; // not enough time
-      //start_ms += interval_ms;
+      mils=millis();
+      if ( (mils - start_ms) < interval_ms) return; // not enough time
+      start_ms += interval_ms;
 
       //Serial1.println("receive data loop\n");
    

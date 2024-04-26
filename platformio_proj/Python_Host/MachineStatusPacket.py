@@ -1,6 +1,7 @@
+
 from construct import Struct, Enum, Byte, Float32l, Int32ul, Int16ul, BitStruct, Bit, Padding, Flag
 
-from construct import Container
+from construct import Container, RawCopy
 
 # Define an empty Container
 empty_container = Container()
@@ -73,7 +74,7 @@ MachineStatusPacket = Struct(
     "address" / Int16ul,
     "machine_state" / Byte,
     "machine_substate" / Byte,
-    "axes_signals" / Byte,
+    "home_state" / Byte,
     "feed_override" / Int16ul,
     "spindle_override" / Int16ul,
     "spindle_stop" / Byte,
@@ -95,58 +96,51 @@ MachineStatusPacket = Struct(
     "message_type" / Byte
 )
 
+x = MachineStatusPacket
+
 # Example usage:
 # Example binary data (This needs to match the expected format and length of your structure)
-example_binary_data = bytes([
-    0x01, 00, # address
-    0x02, # machine_state
+example_binary_data = [
+    0x00, 0x00, # address
+    0x00, # machine_state
     0x00, # machine_substate
     0x00, # axes_signals
-    0x64, 0x00, # feed_override (100)
-    0x64, 0x00, # spindle_override (100)
-    0x08, # spindle_stop (example value)
-    0x32, # spindle_state
+    0x00, 0x00, # feed_override (100)
+    0x00, 0x00, # spindle_override (100)
+    0x00, # spindle_stop (example value)
+    0x00, # spindle_state
     0x00, 0x00, 0x00, 0x00, # spindle_rpm (0)
     0x00, 0x00, 0x00, 0x00, # feed_rate (0.0)
-    0x03, # coolant_state (example value)
-    0x01, # jog_mode
+    0x00, # coolant_state (example value)
+    0x00, # jog_mode
     0x00, 0x00, 0x00, 0x00, # control_signals (0)
     0x00, 0x00, 0x00, 0x00, # jog_stepsize (0.0)
     0x00, # current_wcs
     0x00, # axes_limits
     0x00, # status_code
     0x00, # machine_mode
-    0x00, 0x01, 0x00, 0x00, # x_coordinate (0.0)
-    0x00, 0x00, 0x01, 0x00, # y_coordinate (0.0)
-    0x00, 0x00, 0x00, 0x01, # z_coordinate (0.0)
+    0x00, 0x00, 0x00, 0x00, # x_coordinate (0.0)
+    0x00, 0x00, 0x00, 0x00, # y_coordinate (0.0)
+    0x00, 0x00, 0x00, 0x00, # z_coordinate (0.0)
     0x00, 0x00, 0x00, 0x00, # a_coordinate (0.0)
-    0x00  # message_type
-    
-])
+    0x00  # message_type    
+]
+
+parsedata = bytes(example_binary_data)
+
+# Convert parsedata back into the format of example_binary_data
+converted = [format(byte, '02X') for byte in parsedata]
 
 # Parsing the binary data
-#parsed_data = MachineStatusPacket.parse(example_binary_data)
-
-# Print the keys present in the parsed data
-#print(parsed_data.keys())
-
-# Fill the container with default values
-#default_values = MachineStatusPacket.build(empty_container)
-
-# Print the default values to see the structure definition
-#print(default_values)
-
-# Print the structure definition
-#print(MachineStatusPacket)
-
-# Confirm the length of example_binary_data
-#print(len(example_binary_data))
-
-# Check the structure definition
-#print(MachineStatusPacket.sizeof())
-
-# Parsing the binary data
-#parsed_data = MachineStatusPacket.parse(example_binary_data)
+#parsed_data = x.parse(parsedata)
 
 # Print parsed data to see the result
 #print(parsed_data)
+#parsed_data.address = 5878
+#print(parsed_data)
+# Pack the modified data back into a byte array
+#packed_byte_array = x.build(parsed_data)
+#print(packed_byte_array)
+
+#parsed_data2 = x.parse(packed_byte_array)
+#print(parsed_data2)
