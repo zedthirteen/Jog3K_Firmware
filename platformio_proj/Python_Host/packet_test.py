@@ -2,22 +2,47 @@ from time import sleep
 from pySerialTransfer import pySerialTransfer as txfer
 from MachineStatusPacket import MachineStatusPacket, example_binary_data
 
-import array
+import array, struct
+from enum import Enum
 
+class Status(Enum):
+    CONTINUE        = 3
+    NEW_DATA        = 2
+    NO_DATA         = 1
+    CRC_ERROR       = 0
+    PAYLOAD_ERROR   = -1
+    STOP_BYTE_ERROR = -2
+
+# Define count packet structure
+class countPacket:
+    uptime = 0
+    jog_mode = 0
+    feed_over = 0
+    spindle_over = 0
+    rapid_over = 0
+    buttons = 0
+    feedrate = 0
+    spindle_rpm = 0
+    x_axis = 0
+    y_axis = 0
+    z_axis = 0
+    a_axis = 0
+
+y = countPacket
 x = MachineStatusPacket.parse(bytes(MachineStatusPacket.sizeof()))
 
 x.address = 1
 x.machine_state = 5
 x.machine_substate = 0
-x.home_state = 0xFF
-x.feed_override = 125
-x.spindle_override = 78
+x.home_state = 0
+x.feed_override = 100
+x.spindle_override = 100
 x.spindle_stop = 0
 x.spindle_state = 0
-x.spindle_rpm = 1235
+x.spindle_rpm = 2000
 x.feed_rate = 150.65
-x.coolant_state = 1
-x.jog_mode = 0
+x.coolant_state = 3
+x.jog_mode = 0x00
 x.control_signals = 0
 x.jog_stepsize = 1500
 x.current_wcs = 0
@@ -25,8 +50,8 @@ x.axes_limits = 0
 x.status_code = 0
 x.machine_mode = 0
 x.x_coordinate = 100.35
-x.y_coordinate = 6587.12
-x.z_coordinate = -1.25
+x.y_coordinate = 6482.322
+x.z_coordinate = -100.987
 x.a_coordinate = 0
 x.message_type = 0
 
@@ -46,51 +71,29 @@ if __name__ == '__main__':
         
         # stuff the TX buffer (https://docs.python.org/3/library/struct.html#format-characters)
         send_len = 0
-        print(send_len)
-        send_len = link.tx_obj(x.address,       	    send_len, val_type_override='H')
-        print(send_len)
-        send_len = link.tx_obj(x.machine_state,        send_len, val_type_override='B')
-        print(send_len)
-        send_len = link.tx_obj(x.machine_substate,     send_len, val_type_override='B')
-        print(send_len)
-        send_len = link.tx_obj(x.home_state,           send_len, val_type_override='B')
-        print(send_len)
-        send_len = link.tx_obj(x.feed_override,        send_len, val_type_override='H')
-        print(send_len)
-        send_len = link.tx_obj(x.spindle_override,     send_len, val_type_override='H')
-        print(send_len)
-        send_len = link.tx_obj(x.spindle_stop,         send_len, val_type_override='B')
-        print(send_len)
-        send_len = link.tx_obj(x.spindle_state, 	   send_len, val_type_override='B')
-        print(send_len)
-        send_len = link.tx_obj(x.spindle_rpm,          send_len, val_type_override='i')
-        print(send_len)
-        send_len = link.tx_obj(x.feed_rate,       	   send_len, val_type_override='f')
-        print(send_len)
-        send_len = link.tx_obj(x.coolant_state,        send_len, val_type_override='B')
-        print(send_len)
-        send_len = link.tx_obj(x.jog_mode,             send_len, val_type_override='B')
-        print(send_len)
-        send_len = link.tx_obj(x.control_signals,      send_len, val_type_override='I')
-        print(send_len)
-        send_len = link.tx_obj(x.jog_stepsize,         send_len, val_type_override='f')
-        print(send_len)
-        send_len = link.tx_obj(x.current_wcs,    	   send_len, val_type_override='B')
-        print(send_len)
-        send_len = link.tx_obj(x.axes_limits,          send_len, val_type_override='B')
-        print(send_len)
-        send_len = link.tx_obj(x.status_code, 		   send_len, val_type_override='B')
-        print(send_len)
-        send_len = link.tx_obj(x.machine_mode,         send_len, val_type_override='B')
-        print(send_len)
-        send_len = link.tx_obj(x.x_coordinate,         send_len, val_type_override='f')
-        print(send_len)
-        send_len = link.tx_obj(x.y_coordinate,         send_len, val_type_override='f')
-        print(send_len)
-        send_len = link.tx_obj(x.z_coordinate,    	   send_len, val_type_override='f')
-        print(send_len)
-        send_len = link.tx_obj(x.a_coordinate,         send_len, val_type_override='f')
-        print(send_len)
+        
+        send_len = link.tx_obj(x.address,       	    send_len, val_type_override='H')        
+        send_len = link.tx_obj(x.machine_state,        send_len, val_type_override='B')        
+        send_len = link.tx_obj(x.machine_substate,     send_len, val_type_override='B')        
+        send_len = link.tx_obj(x.home_state,           send_len, val_type_override='B')        
+        send_len = link.tx_obj(x.feed_override,        send_len, val_type_override='H')        
+        send_len = link.tx_obj(x.spindle_override,     send_len, val_type_override='H')        
+        send_len = link.tx_obj(x.spindle_stop,         send_len, val_type_override='B')        
+        send_len = link.tx_obj(x.spindle_state, 	   send_len, val_type_override='B')        
+        send_len = link.tx_obj(x.spindle_rpm,          send_len, val_type_override='i')        
+        send_len = link.tx_obj(x.feed_rate,       	   send_len, val_type_override='f')        
+        send_len = link.tx_obj(x.coolant_state,        send_len, val_type_override='B')        
+        send_len = link.tx_obj(x.jog_mode,             send_len, val_type_override='B')        
+        send_len = link.tx_obj(x.control_signals,      send_len, val_type_override='H')        
+        send_len = link.tx_obj(x.jog_stepsize,         send_len, val_type_override='f')        
+        send_len = link.tx_obj(x.current_wcs,    	   send_len, val_type_override='B')        
+        send_len = link.tx_obj(x.axes_limits,          send_len, val_type_override='B')        
+        send_len = link.tx_obj(x.status_code, 		   send_len, val_type_override='B')        
+        send_len = link.tx_obj(x.machine_mode,         send_len, val_type_override='B')        
+        send_len = link.tx_obj(x.x_coordinate,         send_len, val_type_override='f')        
+        send_len = link.tx_obj(x.y_coordinate,         send_len, val_type_override='f')        
+        send_len = link.tx_obj(x.z_coordinate,    	   send_len, val_type_override='f')       
+        send_len = link.tx_obj(x.a_coordinate,         send_len, val_type_override='f')      
         send_len = link.tx_obj(x.message_type, 		   send_len, val_type_override='B')         
         
         #for index in range(MachineStatusPacket.sizeof()):
@@ -104,6 +107,31 @@ if __name__ == '__main__':
         
         # send the data
         link.send(send_len)
+        sleep(1)
+        
+        print('check available')
+        print(link.available())
+        if link.available():
+            print('available')
+            recSize = 0
+            
+            y.uptime = link.rx_obj(obj_type='I', start_pos=recSize)
+            recSize += txfer.STRUCT_FORMAT_LENGTHS['I']            
+            print(recSize)
+            
+        elif link.status <= 0:
+            if link.status == Status.CRC_ERROR:
+                print('ERROR: CRC_ERROR')
+            elif link.status == Status.PAYLOAD_ERROR:
+                print('ERROR: PAYLOAD_ERROR')
+            elif link.status == Status.STOP_BYTE_ERROR:
+                print('ERROR: STOP_BYTE_ERROR')
+            else:
+                print('ERROR: {}'.format(link.status.name))
+                
+        
+        print(y.uptime)
+        
         
     except KeyboardInterrupt:
         link.close()

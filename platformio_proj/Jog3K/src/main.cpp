@@ -48,6 +48,8 @@ void periodic_task(void)
   //Serial1.write("update pixels\r\n");
   update_neopixels(previous_statuspacket, statuspacket);
   prev_statuspacket = *statuspacket;
+
+  countpacket->uptime = (uint32_t) (millis() / 1000);
 }
 
 void setup() {
@@ -78,15 +80,54 @@ void transmit_data(void){
   // use this variable to keep track of how many
   // bytes we're stuffing in the transmit buffer
 
+  uint8_t strbuf[384];
+
+  const uint32_t interval_ms = 500;
+  static uint32_t start_ms = 0;
+  static unsigned long mils = 0;
+
+    mils=millis();
+    if ( (mils - start_ms) < interval_ms) return; // not enough time
+    start_ms += interval_ms;
+
+    //copy data into the output buffer
+    for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
+      strbuf[i] = count_context.mem[i];
+    }
+
+    Serial1.println("uptime?\n");
+    Serial1.println(countpacket->uptime, DEC);
+
+    Serial1.println("Available?\n");
+    Serial1.println(Serial.availableForWrite(), DEC);
+
   if(Serial.availableForWrite()){
     uint16_t sendSize = 0;
 
     ///////////////////////////////////////// Stuff buffer with struct
-    sendSize = packetTransfer.txObj(countpacket, sendSize);
+    sendSize = packetTransfer.txObj(strbuf, sendSize);
 
     ///////////////////////////////////////// Send buffer
     packetTransfer.sendData(sendSize);
-  }
+
+    for (size_t i = 0; i < sendSize; i++) {
+      // Print each byte as a two-digit hexadecimal number
+      if (strbuf[i] < 16) {
+        Serial1.print("0"); // Print leading zero for single digit numbers
+      }
+      Serial1.print(strbuf[i], HEX); // Print byte in hexadecimal format
+      Serial1.print(" "); // Print space between bytes
+      
+      // Insert a line break after every 16 bytes for readability
+      if ((i + 1) % 16 == 0) {
+        Serial1.println();
+      }
+    }
+    // Print a final line break if necessary
+    if (sendSize % 16 != 0) {
+      Serial1.println();
+    }
+  }  
   
 }
 
@@ -109,6 +150,9 @@ void receive_data(void){
       //Serial1.println(sizeof(machine_status_packet_t), DEC);
 
       recSize = packetTransfer.rxObj(strbuf, recSize );
+
+      Serial1.println("statuspacket_size\n");
+      Serial1.println(sizeof(machine_status_packet_t), DEC);
 
       Serial1.println("receive data\n");
       Serial1.println(recSize, DEC);
@@ -189,7 +233,7 @@ void loop() {
   
   //Serial1.write("read encoders\r\n");
   receive_data();
-  //transmit_data();
+  transmit_data();
   periodic_task();
 }
 
