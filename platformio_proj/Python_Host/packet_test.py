@@ -1,3 +1,4 @@
+import time
 from time import sleep
 from pySerialTransfer import pySerialTransfer as txfer
 from MachineStatusPacket import MachineStatusPacket, example_binary_data
@@ -35,8 +36,8 @@ x.address = 1
 x.machine_state = 5
 x.machine_substate = 0
 x.home_state = 0
-x.feed_override = 100
-x.spindle_override = 100
+x.feed_override = 0
+x.spindle_override = 0
 x.spindle_stop = 0
 x.spindle_state = 0
 x.spindle_rpm = 2000
@@ -59,79 +60,135 @@ packed_byte_array = MachineStatusPacket.build(x)
 # Convert parsedata back into the format of example_binary_data
 converted = [hex(byte) for byte in packed_byte_array]
 
-if __name__ == '__main__':
-    try:
-        testStruct = packed_byte_array
-        string = array.array('B',testStruct)
+testStruct = packed_byte_array
+string = array.array('B',testStruct)
+
+link = txfer.SerialTransfer('COM16')
+
+link.open()
+#sleep(1)
+
+# stuff the TX buffer (https://docs.python.org/3/library/struct.html#format-characters)
+send_len = 0
+
+send_len = link.tx_obj(x.address,       	    send_len, val_type_override='H')        
+send_len = link.tx_obj(x.machine_state,        send_len, val_type_override='B')        
+send_len = link.tx_obj(x.machine_substate,     send_len, val_type_override='B')        
+send_len = link.tx_obj(x.home_state,           send_len, val_type_override='B')        
+send_len = link.tx_obj(x.feed_override,        send_len, val_type_override='H')        
+send_len = link.tx_obj(x.spindle_override,     send_len, val_type_override='H')        
+send_len = link.tx_obj(x.spindle_stop,         send_len, val_type_override='B')        
+send_len = link.tx_obj(x.spindle_state, 	   send_len, val_type_override='B')        
+send_len = link.tx_obj(x.spindle_rpm,          send_len, val_type_override='i')        
+send_len = link.tx_obj(x.feed_rate,       	   send_len, val_type_override='f')        
+send_len = link.tx_obj(x.coolant_state,        send_len, val_type_override='B')        
+send_len = link.tx_obj(x.jog_mode,             send_len, val_type_override='B')        
+send_len = link.tx_obj(x.control_signals,      send_len, val_type_override='H')        
+send_len = link.tx_obj(x.jog_stepsize,         send_len, val_type_override='f')        
+send_len = link.tx_obj(x.current_wcs,    	   send_len, val_type_override='B')        
+send_len = link.tx_obj(x.axes_limits,          send_len, val_type_override='B')        
+send_len = link.tx_obj(x.status_code, 		   send_len, val_type_override='B')        
+send_len = link.tx_obj(x.machine_mode,         send_len, val_type_override='B')        
+send_len = link.tx_obj(x.x_coordinate,         send_len, val_type_override='f')        
+send_len = link.tx_obj(x.y_coordinate,         send_len, val_type_override='f')        
+send_len = link.tx_obj(x.z_coordinate,    	   send_len, val_type_override='f')       
+send_len = link.tx_obj(x.a_coordinate,         send_len, val_type_override='f')      
+send_len = link.tx_obj(x.message_type, 		   send_len, val_type_override='B')         
+
+#for index in range(MachineStatusPacket.sizeof()):
+#    link.txBuff[index] = testStruct[index]
+    
+#sendSize = link.tx_obj(string)
+#sendSize = link.tx_obj(testStruct.y, start_pos=sendSize)
+#sendSize = MachineStatusPacket.sizeof()
+print(send_len)
+
+# send the data
+link.send(send_len)
+#sleep(1)
+
+print('check available')
+print(link.available())
+
+timeout = 2  # 100ms timeout
+start_time = time.time()
+
+while time.time() - start_time < timeout:
+    if link.available():
+        print('get data')
+        recSize = 0
+        print(recSize)
+        y.uptime = link.rx_obj(obj_type='I', start_pos=recSize)
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['I']
+        print(recSize)
         
-        link = txfer.SerialTransfer('COM16')
+        y.jog_mode = link.rx_obj(obj_type='B', start_pos=recSize)
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['B']
+        print(recSize)
         
-        link.open()
-        #sleep(1)
+        y.feed_over = link.rx_obj(obj_type='i', start_pos=recSize)
+        little_endian_bytes = struct.pack('<i', y.feed_over)
+        y.feed_over = struct.unpack('>i', little_endian_bytes)[0]
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['i']
+        print(recSize)
         
-        # stuff the TX buffer (https://docs.python.org/3/library/struct.html#format-characters)
-        send_len = 0
+        y.spindle_over = link.rx_obj(obj_type='i', start_pos=recSize)
+        little_endian_bytes = struct.pack('<i', y.spindle_over)
+        y.spindle_over = struct.unpack('>i', little_endian_bytes)[0]
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['i']
+        print(recSize)
         
-        send_len = link.tx_obj(x.address,       	    send_len, val_type_override='H')        
-        send_len = link.tx_obj(x.machine_state,        send_len, val_type_override='B')        
-        send_len = link.tx_obj(x.machine_substate,     send_len, val_type_override='B')        
-        send_len = link.tx_obj(x.home_state,           send_len, val_type_override='B')        
-        send_len = link.tx_obj(x.feed_override,        send_len, val_type_override='H')        
-        send_len = link.tx_obj(x.spindle_override,     send_len, val_type_override='H')        
-        send_len = link.tx_obj(x.spindle_stop,         send_len, val_type_override='B')        
-        send_len = link.tx_obj(x.spindle_state, 	   send_len, val_type_override='B')        
-        send_len = link.tx_obj(x.spindle_rpm,          send_len, val_type_override='i')        
-        send_len = link.tx_obj(x.feed_rate,       	   send_len, val_type_override='f')        
-        send_len = link.tx_obj(x.coolant_state,        send_len, val_type_override='B')        
-        send_len = link.tx_obj(x.jog_mode,             send_len, val_type_override='B')        
-        send_len = link.tx_obj(x.control_signals,      send_len, val_type_override='H')        
-        send_len = link.tx_obj(x.jog_stepsize,         send_len, val_type_override='f')        
-        send_len = link.tx_obj(x.current_wcs,    	   send_len, val_type_override='B')        
-        send_len = link.tx_obj(x.axes_limits,          send_len, val_type_override='B')        
-        send_len = link.tx_obj(x.status_code, 		   send_len, val_type_override='B')        
-        send_len = link.tx_obj(x.machine_mode,         send_len, val_type_override='B')        
-        send_len = link.tx_obj(x.x_coordinate,         send_len, val_type_override='f')        
-        send_len = link.tx_obj(x.y_coordinate,         send_len, val_type_override='f')        
-        send_len = link.tx_obj(x.z_coordinate,    	   send_len, val_type_override='f')       
-        send_len = link.tx_obj(x.a_coordinate,         send_len, val_type_override='f')      
-        send_len = link.tx_obj(x.message_type, 		   send_len, val_type_override='B')         
+        y.buttons = link.rx_obj(obj_type='I', start_pos=recSize)
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['I']
+        print(recSize)
         
-        #for index in range(MachineStatusPacket.sizeof()):
-        #    link.txBuff[index] = testStruct[index]
-            
-        #sendSize = link.tx_obj(string)
-        #sendSize = link.tx_obj(testStruct.y, start_pos=sendSize)
-        #sendSize = MachineStatusPacket.sizeof()
-        print(send_len)
-        print(testStruct)
+        y.feedrate = link.rx_obj(obj_type='f', start_pos=recSize)
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['f']
+        print(recSize)
         
-        # send the data
-        link.send(send_len)
-        sleep(1)
+        y.spindle_rpm = link.rx_obj(obj_type='f', start_pos=recSize)
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['f']
+        print(recSize)
         
-        print('check available')
-        print(link.available())
-        if link.available():
-            print('available')
-            recSize = 0
-            
-            y.uptime = link.rx_obj(obj_type='I', start_pos=recSize)
-            recSize += txfer.STRUCT_FORMAT_LENGTHS['I']            
-            print(recSize)
-            
-        elif link.status <= 0:
-            if link.status == Status.CRC_ERROR:
-                print('ERROR: CRC_ERROR')
-            elif link.status == Status.PAYLOAD_ERROR:
-                print('ERROR: PAYLOAD_ERROR')
-            elif link.status == Status.STOP_BYTE_ERROR:
-                print('ERROR: STOP_BYTE_ERROR')
-            else:
-                print('ERROR: {}'.format(link.status.name))
-                
+        y.x_axis = link.rx_obj(obj_type='f', start_pos=recSize)
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['f']
+        print(recSize)
         
-        print(y.uptime)
+        y.y_axis = link.rx_obj(obj_type='f', start_pos=recSize)
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['f']
+        print(recSize)
         
+        y.z_axis = link.rx_obj(obj_type='f', start_pos=recSize)
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['f']
+        print(recSize)
         
-    except KeyboardInterrupt:
-        link.close()
+        y.a_axis = link.rx_obj(obj_type='f', start_pos=recSize)
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['f']          
+        
+        print(recSize)
+        break
+        
+    elif link.status <= 0:
+        if link.status == Status.CRC_ERROR:
+            print('ERROR: CRC_ERROR')
+        elif link.status == Status.PAYLOAD_ERROR:
+            print('ERROR: PAYLOAD_ERROR')
+        elif link.status == Status.STOP_BYTE_ERROR:
+            print('ERROR: STOP_BYTE_ERROR')
+        else:
+            print('ERROR: {}'.format(link.status.name))                
+    
+print('uptime: ' + str(y.uptime))
+print('jog_mode: ' + str(y.jog_mode))
+print('feed_over: ' + str(y.feed_over))
+print('spindle_over: ' + str(y.spindle_over))
+print('rapid_over: ' + str(y.rapid_over))
+print('buttons: ' + str(y.buttons))
+print('feedrate: ' + str(y.feedrate))
+print('spindle_rpm: ' + str(y.spindle_rpm))
+print('x_axis: ' + str(y.x_axis))
+print('y_axis: ' + str(y.y_axis))
+print('z_axis: ' + str(y.z_axis))
+print('a_axis: ' + str(y.a_axis))
+
+link.close()

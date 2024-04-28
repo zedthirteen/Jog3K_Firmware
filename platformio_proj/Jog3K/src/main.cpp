@@ -18,7 +18,7 @@ char arr2[] = "HITHEE";
 
 float num = 0;
 
-status_context_t status_context, count_context;
+status_context_t status_context, count_context = {};
 
 machine_status_packet_t prev_statuspacket = {};
 
@@ -36,6 +36,8 @@ void periodic_task(void)
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
 
+  static float num = 0;
+
   static bool led_state = false;
 
   // Blink every interval ms
@@ -50,6 +52,11 @@ void periodic_task(void)
   prev_statuspacket = *statuspacket;
 
   countpacket->uptime = (uint32_t) (millis() / 1000);
+  countpacket->jog_mode.value++;
+  //countpacket->feed_over = countpacket->feed_over + 10 ;
+  //countpacket->spindle_over = 3;
+
+  num=num+1;
 }
 
 void setup() {
@@ -70,6 +77,11 @@ void setup() {
   Serial1.println("Jog3K serial debug");
   //Serial.println("Jog3K serial debug");
 
+    //copy data into the output buffer
+  for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
+    count_context.mem[i] = 0;
+  }
+
   previous_statuspacket->machine_state = MachineState_Other;
   simulation_mode = 0;
   current_jog_axis = X;
@@ -82,7 +94,7 @@ void transmit_data(void){
 
   uint8_t strbuf[384];
 
-  const uint32_t interval_ms = 500;
+  const uint32_t interval_ms = 0;
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
 
@@ -98,8 +110,8 @@ void transmit_data(void){
     Serial1.println("uptime?\n");
     Serial1.println(countpacket->uptime, DEC);
 
-    Serial1.println("Available?\n");
-    Serial1.println(Serial.availableForWrite(), DEC);
+    Serial1.println("Size?\n");
+    Serial1.println(sizeof(pendant_count_packet_t), DEC);
 
   if(Serial.availableForWrite()){
     uint16_t sendSize = 0;
@@ -110,6 +122,7 @@ void transmit_data(void){
     ///////////////////////////////////////// Send buffer
     packetTransfer.sendData(sendSize);
 
+  #if 0
     for (size_t i = 0; i < sendSize; i++) {
       // Print each byte as a two-digit hexadecimal number
       if (strbuf[i] < 16) {
@@ -127,8 +140,8 @@ void transmit_data(void){
     if (sendSize % 16 != 0) {
       Serial1.println();
     }
-  }  
-  
+  #endif 
+  } 
 }
 
 void receive_data(void){

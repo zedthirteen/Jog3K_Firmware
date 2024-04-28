@@ -435,11 +435,11 @@ typedef struct __attribute__((packed)) {
 #define MAXVAL 9999.99
 
 typedef struct {
-int32_t uptime;
+uint32_t uptime;
 jog_mode_t jog_mode;
-int32_t feed_over;
-int32_t spindle_over;
-int32_t rapid_over;
+uint32_t feed_over;
+uint32_t spindle_over;
+uint32_t rapid_over;
 uint32_t buttons;
 float feedrate; 
 float spindle_rpm; 
