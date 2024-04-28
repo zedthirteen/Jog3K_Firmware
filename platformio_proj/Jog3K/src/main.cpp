@@ -52,7 +52,7 @@ void periodic_task(void)
   prev_statuspacket = *statuspacket;
 
   countpacket->uptime = (uint32_t) (millis() / 1000);
-  countpacket->jog_mode.value++;
+  //countpacket->jog_mode.value++;
   //countpacket->feed_over = countpacket->feed_over + 10 ;
   //countpacket->spindle_over = 3;
 
@@ -106,12 +106,31 @@ void transmit_data(void){
     for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
       strbuf[i] = count_context.mem[i];
     }
+    
+    #if 0
+    Serial1.print("\033c");
 
-    Serial1.println("uptime?\n");
+    Serial1.print("uptime   : ");
     Serial1.println(countpacket->uptime, DEC);
+
+    Serial1.print("jog_mode   : ");
+    Serial1.println(countpacket->jog_mode.value, DEC);
+
+    Serial1.print("feed_over   : ");
+    Serial1.println(countpacket->feed_over, DEC);
+
+    Serial1.print("spindle_over: ");
+    Serial1.println(countpacket->spindle_over, DEC);
+
+    Serial1.print("rapid_over: ");
+    Serial1.println(countpacket->rapid_over, DEC);
+
+    Serial1.print("buttons: ");
+    Serial1.println(countpacket->buttons, DEC);
 
     Serial1.println("Size?\n");
     Serial1.println(sizeof(pendant_count_packet_t), DEC);
+    #endif
 
   if(Serial.availableForWrite()){
     uint16_t sendSize = 0;
@@ -164,6 +183,7 @@ void receive_data(void){
 
       recSize = packetTransfer.rxObj(strbuf, recSize );
 
+      #if 0
       Serial1.println("statuspacket_size\n");
       Serial1.println(sizeof(machine_status_packet_t), DEC);
 
@@ -187,6 +207,7 @@ void receive_data(void){
       if (recSize % 16 != 0) {
         Serial1.println();
       }
+      #endif
 
       //copy data into the statuspackate
       for (size_t i = 0; i < sizeof(machine_status_packet_t); i++) {

@@ -36,8 +36,8 @@ x.address = 1
 x.machine_state = 5
 x.machine_substate = 0
 x.home_state = 0
-x.feed_override = 0
-x.spindle_override = 0
+x.feed_override = 100
+x.spindle_override = 100
 x.spindle_stop = 0
 x.spindle_state = 0
 x.spindle_rpm = 2000
@@ -71,7 +71,7 @@ link.open()
 # stuff the TX buffer (https://docs.python.org/3/library/struct.html#format-characters)
 send_len = 0
 
-send_len = link.tx_obj(x.address,       	    send_len, val_type_override='H')        
+send_len = link.tx_obj(x.address,       	   send_len, val_type_override='H')        
 send_len = link.tx_obj(x.machine_state,        send_len, val_type_override='B')        
 send_len = link.tx_obj(x.machine_substate,     send_len, val_type_override='B')        
 send_len = link.tx_obj(x.home_state,           send_len, val_type_override='B')        
@@ -126,17 +126,17 @@ while time.time() - start_time < timeout:
         recSize += txfer.STRUCT_FORMAT_LENGTHS['B']
         print(recSize)
         
-        y.feed_over = link.rx_obj(obj_type='i', start_pos=recSize)
-        little_endian_bytes = struct.pack('<i', y.feed_over)
-        y.feed_over = struct.unpack('>i', little_endian_bytes)[0]
-        recSize += txfer.STRUCT_FORMAT_LENGTHS['i']
+        y.feed_over = link.rx_obj(obj_type='I', start_pos=recSize)
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['I']
         print(recSize)
         
         y.spindle_over = link.rx_obj(obj_type='i', start_pos=recSize)
-        little_endian_bytes = struct.pack('<i', y.spindle_over)
-        y.spindle_over = struct.unpack('>i', little_endian_bytes)[0]
         recSize += txfer.STRUCT_FORMAT_LENGTHS['i']
         print(recSize)
+        
+        y.rapid_over = link.rx_obj(obj_type='I', start_pos=recSize)
+        recSize += txfer.STRUCT_FORMAT_LENGTHS['I']
+        print(recSize)        
         
         y.buttons = link.rx_obj(obj_type='I', start_pos=recSize)
         recSize += txfer.STRUCT_FORMAT_LENGTHS['I']

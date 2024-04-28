@@ -434,7 +434,7 @@ typedef struct __attribute__((packed)) {
 #define MINVAL -9999.99
 #define MAXVAL 9999.99
 
-typedef struct {
+typedef struct __attribute__((packed)) {
 uint32_t uptime;
 jog_mode_t jog_mode;
 uint32_t feed_over;
