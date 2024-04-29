@@ -67,7 +67,7 @@ SerialTransfer packetTransfer;
 
 float num = 0;
 
-status_context_t status_context, count_context;
+status_context_t prev_status_context, status_context, count_context;
 
 machine_status_packet_t prev_statuspacket = {};
 
@@ -174,8 +174,8 @@ void setup() {
   // Init USB Host on native controller roothub port0
   USBHost.begin(0);
   SerialHost.begin(0,0);
-
-  packetTransfer.begin(SerialHost);
+  //packetTransfer.begin(SerialHost);
+  packetTransfer.begin(SerialHost,true, Serial1, 50);
   simulation_mode = 0;
 
 }
@@ -184,53 +184,61 @@ void transmit_data(void){
   // use this variable to keep track of how many
   // bytes we're stuffing in the transmit buffer
   uint16_t sendSize = 0;
-  uint8_t strbuf[384];
+  uint8_t strbuf[1024];
+  bool send_data_now;
 
-  static const uint32_t interval_ms = 15;
+  static const uint32_t interval_ms = 20;
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
+
+  #if 1
+
+  statuspacket->coordinate.x = num * 0.1;
+  statuspacket->coordinate.y = num * 10;
+  statuspacket->coordinate.z = num * -1;
+
+  num = num + 0.001;
+  //Serial1.print("\033c");
+
+  //Serial1.println("Size for TX?\n");
+  //Serial1.println(sizeof(machine_status_packet_t), DEC);
+  #endif
 
   mils=millis();
   if ( (mils - start_ms) < interval_ms) return; // not enough time
   start_ms += interval_ms;
 
-      //copy data into the output buffer
-    for (size_t i = 0; i < sizeof(machine_status_packet_t); i++) {
-      strbuf[i] = status_context.mem[i];
-    }
-    
-    #if 1
+  //copy data into the output buffer, only send it if there is a change
+  send_data_now = true;
+  send_data_now = memcmp(status_context.mem, prev_status_context.mem, sizeof(machine_status_packet_t)) != 0;
+  //memcpy(prev_status_context.mem, status_context.mem, sizeof(machine_status_packet_t));
+  memcpy(prev_status_context.mem, status_context.mem, sizeof(machine_status_packet_t));
 
-    statuspacket->coordinate.x = num * 0.1;
-    statuspacket->coordinate.y = num * 10;
-    statuspacket->coordinate.z = num * -1;
+  //copy data into the output buffer
+  //for (size_t i = 0; i < sizeof(machine_status_packet_t); i++) {
+  //  strbuf[i] = status_context.mem[i];
+  //}
 
-    num = num + 1;
-    //Serial1.print("\033c");
-
-    //Serial1.println("Size for TX?\n");
-    //Serial1.println(sizeof(machine_status_packet_t), DEC);
-    #endif
-
-  if (SerialHost.connected() && SerialHost.availableForWrite()){
-    gpio_put(GREENLED, 1);
+  
+  if (!packetTransfer.available() && SerialHost.connected() && (send_data_now == true)){
+    gpio_put(REDLED, 1);
     ///////////////////////////////////////// Stuff buffer with struct
-    //sendSize = packetTransfer.txObj(statuspacket, sizeof(machine_status_packet_t));
-    sendSize = packetTransfer.txObj(strbuf, sendSize);
-
+    packetTransfer.reset();
+    sendSize = packetTransfer.txObj(prev_status_context.mem, sendSize, sizeof(machine_status_packet_t));
+    //SerialHost.flush();
     ///////////////////////////////////////// Send buffer
     packetTransfer.sendData(sendSize);
 
-    SerialHost.flush();
+    
     //Serial1.println("sendin\n");}
 
   }
-  gpio_put(GREENLED, 0);  
+  gpio_put(REDLED, 0);  
 }
 
 void receive_data(void){
 
-  uint8_t strbuf[384];
+  uint8_t strbuf[1024];
 
   if (SerialHost.connected() && SerialHost.available()) {
 
@@ -246,13 +254,13 @@ void receive_data(void){
 
       recSize = packetTransfer.rxObj(strbuf, recSize );
 
-      #if 1
+      #if 0
       Serial1.print("\033c");
 
       Serial1.println("pendant_count_packet_t_size\n");
       Serial1.println(sizeof(pendant_count_packet_t), DEC);
 
-      Serial1.println("receive data\n");
+      Serial1.println("receive data");
       Serial1.println(recSize, DEC);
 
       for (size_t i = 0; i < recSize; i++) {
@@ -274,10 +282,11 @@ void receive_data(void){
       }
       #endif
 
-      //copy data into the statuspackate
+      //copy data into the statuspacket
       for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
         count_context.mem[i] = strbuf[i];
       }
+      packetTransfer.reset();
     }
   }
   gpio_put(GREENLED, 0);
@@ -288,9 +297,10 @@ void loop() {
   //led_blinking_task();
   USBHost.task();
   receive_data();
-  transmit_data();  
+  transmit_data();
+  //SerialHost.flush();
   //forward_serial();
-  //Serial1.flush();
+  Serial1.flush();
   i2c_task();
 }
 

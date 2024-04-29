@@ -55,8 +55,6 @@ void periodic_task(void)
   //countpacket->jog_mode.value++;
   //countpacket->feed_over = countpacket->feed_over + 10 ;
   //countpacket->spindle_over = 3;
-
-  num=num+1;
 }
 
 void setup() {
@@ -64,7 +62,7 @@ void setup() {
   Serial1.setTX(0);
   Serial1.begin(115200);
   Serial.begin(115200);
-  packetTransfer.begin(Serial);
+  packetTransfer.begin(Serial, true, Serial1, 50);
   //while (!Serial){}
 
   delay(250);
@@ -92,30 +90,45 @@ void transmit_data(void){
   // use this variable to keep track of how many
   // bytes we're stuffing in the transmit buffer
 
-  uint8_t strbuf[384];
+  uint8_t strbuf[1024];
   bool send_data_now;
 
-  const uint32_t interval_ms = 15;
+  const uint32_t interval_ms = 25;
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
 
-    mils=millis();
-    if ( (mils - start_ms) < interval_ms) return; // not enough time
-    start_ms += interval_ms;
+  #if 1
 
-    //copy data into the output buffer, only send it if there is a change
-    send_data_now = memcmp(count_context.mem, prev_count_context.mem, sizeof(pendant_count_packet_t)) != 0;
-    memcpy(prev_count_context.mem, count_context.mem, sizeof(pendant_count_packet_t));
-    memcpy(strbuf, count_context.mem, sizeof(pendant_count_packet_t));
-    //for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
-    //  strbuf[i] = count_context.mem[i];
-    //}
-    
+  countpacket->x_axis = num * 0.1;
+  countpacket->y_axis = num * 10;
+  countpacket->z_axis = num * -1;
 
+  num = num + 0.001;
+  //Serial1.print("\033c");
+
+  //Serial1.println("Size for TX?\n");
+  //Serial1.println(sizeof(machine_status_packet_t), DEC);
+  #endif
+
+  mils=millis();
+  if ( (mils - start_ms) < interval_ms) return; // not enough time
+  
+  
+
+  //copy data into the output buffer, only send it if there is a change
+  send_data_now = memcmp(count_context.mem, prev_count_context.mem, sizeof(pendant_count_packet_t)) != 0;
+  //memcpy(prev_count_context.mem, count_context.mem, sizeof(pendant_count_packet_t));
+  memcpy(prev_count_context.mem, count_context.mem, sizeof(pendant_count_packet_t));
+  //for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
+  //  strbuf[i] = count_context.mem[i];
+  //}
 
   if(Serial.availableForWrite() && (send_data_now == true)){
-    #if 1
-    Serial1.print("\033c");
+    #if 0
+    //Serial1.print("\033c");
+
+    Serial1.print("Serial.availableForWrite()   : ");
+    Serial1.println(Serial.availableForWrite(), DEC);
 
     Serial1.print("uptime   : ");
     Serial1.println(countpacket->uptime, DEC);
@@ -135,6 +148,9 @@ void transmit_data(void){
     Serial1.print("buttons: ");
     Serial1.println(countpacket->buttons, DEC);
 
+    Serial1.print("X Axis: ");
+    Serial1.println(countpacket->x_axis, DEC);
+
     Serial1.println("Size?\n");
     Serial1.println(sizeof(pendant_count_packet_t), DEC);
     #endif    
@@ -142,31 +158,12 @@ void transmit_data(void){
     uint16_t sendSize = 0;
 
     ///////////////////////////////////////// Stuff buffer with struct
-    sendSize = packetTransfer.txObj(strbuf, sendSize);
-
+    packetTransfer.reset();
+    sendSize = packetTransfer.txObj(prev_count_context.mem, sendSize, sizeof(pendant_count_packet_t));
     ///////////////////////////////////////// Send buffer
     packetTransfer.sendData(sendSize);
-
-  #if 0
-    for (size_t i = 0; i < sendSize; i++) {
-      // Print each byte as a two-digit hexadecimal number
-      if (strbuf[i] < 16) {
-        Serial1.print("0"); // Print leading zero for single digit numbers
-      }
-      Serial1.print(strbuf[i], HEX); // Print byte in hexadecimal format
-      Serial1.print(" "); // Print space between bytes
-      
-      // Insert a line break after every 16 bytes for readability
-      if ((i + 1) % 16 == 0) {
-        Serial1.println();
-      }
-    }
-    // Print a final line break if necessary
-    if (sendSize % 16 != 0) {
-      Serial1.println();
-    }
-  #endif 
-  } 
+  }
+  start_ms += interval_ms;//only update if successfully transmitted
 }
 
 void receive_data(void){
@@ -174,7 +171,7 @@ void receive_data(void){
   const uint32_t interval_ms = 15;
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
-  uint8_t strbuf[384];
+  uint8_t strbuf[1024];
 
   if (Serial.available()) {
 
@@ -190,10 +187,11 @@ void receive_data(void){
       recSize = packetTransfer.rxObj(strbuf, recSize );
 
       #if 0
-      Serial1.println("statuspacket_size\n");
+      Serial1.print("\033c");
+      Serial1.println("statuspacket_size");
       Serial1.println(sizeof(machine_status_packet_t), DEC);
 
-      Serial1.println("receive data\n");
+      Serial1.println("receive data");
       Serial1.println(recSize, DEC);
 
       for (size_t i = 0; i < recSize; i++) {
@@ -219,6 +217,7 @@ void receive_data(void){
       for (size_t i = 0; i < sizeof(machine_status_packet_t); i++) {
         status_context.mem[i] = strbuf[i];
       }
+      packetTransfer.reset();
     }
   } else{
 
@@ -269,11 +268,13 @@ void loop() {
       }
     break;//close default screenmode          
   }//close switch statement
+  
   readButtons(); //read Inputs   
   
   //Serial1.write("read encoders\r\n");
-  receive_data();
   transmit_data();
+  //Serial.flush();
+  receive_data();  
   periodic_task();
 }
 
