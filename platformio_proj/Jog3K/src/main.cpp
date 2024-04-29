@@ -18,7 +18,7 @@ char arr2[] = "HITHEE";
 
 float num = 0;
 
-status_context_t status_context, count_context = {};
+status_context_t status_context, prev_count_context, count_context = {};
 
 machine_status_packet_t prev_statuspacket = {};
 
@@ -93,8 +93,9 @@ void transmit_data(void){
   // bytes we're stuffing in the transmit buffer
 
   uint8_t strbuf[384];
+  bool send_data_now;
 
-  const uint32_t interval_ms = 0;
+  const uint32_t interval_ms = 15;
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
 
@@ -102,12 +103,18 @@ void transmit_data(void){
     if ( (mils - start_ms) < interval_ms) return; // not enough time
     start_ms += interval_ms;
 
-    //copy data into the output buffer
-    for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
-      strbuf[i] = count_context.mem[i];
-    }
+    //copy data into the output buffer, only send it if there is a change
+    send_data_now = memcmp(count_context.mem, prev_count_context.mem, sizeof(pendant_count_packet_t)) != 0;
+    memcpy(prev_count_context.mem, count_context.mem, sizeof(pendant_count_packet_t));
+    memcpy(strbuf, count_context.mem, sizeof(pendant_count_packet_t));
+    //for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
+    //  strbuf[i] = count_context.mem[i];
+    //}
     
-    #if 0
+
+
+  if(Serial.availableForWrite() && (send_data_now == true)){
+    #if 1
     Serial1.print("\033c");
 
     Serial1.print("uptime   : ");
@@ -130,9 +137,8 @@ void transmit_data(void){
 
     Serial1.println("Size?\n");
     Serial1.println(sizeof(pendant_count_packet_t), DEC);
-    #endif
-
-  if(Serial.availableForWrite()){
+    #endif    
+    
     uint16_t sendSize = 0;
 
     ///////////////////////////////////////// Stuff buffer with struct

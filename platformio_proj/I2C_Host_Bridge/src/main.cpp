@@ -184,68 +184,110 @@ void transmit_data(void){
   // use this variable to keep track of how many
   // bytes we're stuffing in the transmit buffer
   uint16_t sendSize = 0;
+  uint8_t strbuf[384];
 
-  static const uint32_t interval_ms2 = 500;
-  static uint32_t start_ms2 = 0;
-  static unsigned long mils2 = 0;
+  static const uint32_t interval_ms = 15;
+  static uint32_t start_ms = 0;
+  static unsigned long mils = 0;
 
-  mils2=millis();
-  if ( (mils2 - start_ms2) < interval_ms2) return; // not enough time
-  start_ms2 += interval_ms2;
+  mils=millis();
+  if ( (mils - start_ms) < interval_ms) return; // not enough time
+  start_ms += interval_ms;
 
-  
-  if (SerialHost.connected() && SerialHost.availableForWrite()){
+      //copy data into the output buffer
+    for (size_t i = 0; i < sizeof(machine_status_packet_t); i++) {
+      strbuf[i] = status_context.mem[i];
+    }
+    
+    #if 1
 
     statuspacket->coordinate.x = num * 0.1;
     statuspacket->coordinate.y = num * 10;
     statuspacket->coordinate.z = num * -1;
 
     num = num + 1;
+    //Serial1.print("\033c");
 
+    //Serial1.println("Size for TX?\n");
+    //Serial1.println(sizeof(machine_status_packet_t), DEC);
+    #endif
+
+  if (SerialHost.connected() && SerialHost.availableForWrite()){
+    gpio_put(GREENLED, 1);
     ///////////////////////////////////////// Stuff buffer with struct
     //sendSize = packetTransfer.txObj(statuspacket, sizeof(machine_status_packet_t));
-    sendSize = packetTransfer.txObj(statuspacket, sendSize);
+    sendSize = packetTransfer.txObj(strbuf, sendSize);
 
     ///////////////////////////////////////// Send buffer
     packetTransfer.sendData(sendSize);
+
+    SerialHost.flush();
+    //Serial1.println("sendin\n");}
+
   }
-
-
-  
+  gpio_put(GREENLED, 0);  
 }
 
 void receive_data(void){
+
+  uint8_t strbuf[384];
 
   if (SerialHost.connected() && SerialHost.available()) {
 
     if(packetTransfer.available())
     {
+      gpio_put(GREENLED, 1);
       // use this variable to keep track of how many
       // bytes we've processed from the receive buffer
       uint16_t recSize = 0;
 
-      recSize = packetTransfer.rxObj(countpacket, recSize);
+      //Serial1.println("receive data\n");
+      //Serial1.println(sizeof(machine_status_packet_t), DEC);
 
-    }
+      recSize = packetTransfer.rxObj(strbuf, recSize );
 
-      //Serial1.println("receive data loop\n");
-    
-    if(statuspacket->machine_state == MachineState_Disconnected){
-      simulation_mode = 1;
-    }
+      #if 1
+      Serial1.print("\033c");
 
-    if(simulation_mode){
-      //process_simulation_mode();
+      Serial1.println("pendant_count_packet_t_size\n");
+      Serial1.println(sizeof(pendant_count_packet_t), DEC);
+
+      Serial1.println("receive data\n");
+      Serial1.println(recSize, DEC);
+
+      for (size_t i = 0; i < recSize; i++) {
+        // Print each byte as a two-digit hexadecimal number
+        if (strbuf[i] < 16) {
+          Serial1.print("0"); // Print leading zero for single digit numbers
+        }
+        Serial1.print(strbuf[i], HEX); // Print byte in hexadecimal format
+        Serial1.print(" "); // Print space between bytes
+        
+        // Insert a line break after every 16 bytes for readability
+        if ((i + 1) % 16 == 0) {
+          Serial1.println();
+        }
+      }
+      // Print a final line break if necessary
+      if (recSize % 16 != 0) {
+        Serial1.println();
+      }
+      #endif
+
+      //copy data into the statuspackate
+      for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
+        count_context.mem[i] = strbuf[i];
+      }
     }
   }
-
+  gpio_put(GREENLED, 0);
 }
 
 
 void loop() {
-  led_blinking_task();
+  //led_blinking_task();
   USBHost.task();
-  //receive_data();
+  receive_data();
   transmit_data();  
   //forward_serial();
   //Serial1.flush();

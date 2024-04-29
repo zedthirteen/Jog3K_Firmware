@@ -400,7 +400,7 @@ typedef enum {
     Status_StatusMax = Status_Unhandled
 } status_code_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
     uint16_t address;
     machine_state_t machine_state;
     uint8_t machine_substate;
@@ -421,7 +421,7 @@ typedef struct {
     machine_modes_t machine_modes;
     machine_coords_t coordinate;
     msg_type_t msgtype; //<! 1 - 127 -> msg[] contains a string msgtype long
-    //uint8_t msg[128];
+    uint8_t msg[128];
 } machine_status_packet_t;
 
 #define MINVAL -9999.99
