@@ -97,13 +97,15 @@ void transmit_data(void){
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
 
-  #if 1
+  #if 0
 
   countpacket->x_axis = num * 0.1;
   countpacket->y_axis = num * 10;
   countpacket->z_axis = num * -1;
 
   num = num + 0.001;
+  if (num > 9999)
+    num = 0;
   //Serial1.print("\033c");
 
   //Serial1.println("Size for TX?\n");

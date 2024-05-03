@@ -446,7 +446,7 @@ typedef struct
 {
     uint8_t mem[1024];
     uint16_t mem_address;
-    bool mem_address_written;
+    uint8_t mem_address_written;
 } status_context_t;
 
 enum ScreenMode{
@@ -472,6 +472,9 @@ enum CurrentJogAxis{
 };
 
 extern status_context_t status_context, count_context;
+
+extern uint16_t mem_address;
+extern uint8_t mem_address_written;
 
 extern machine_status_packet_t prev_statuspacket;
 

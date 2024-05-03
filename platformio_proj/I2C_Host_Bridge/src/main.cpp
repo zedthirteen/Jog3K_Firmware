@@ -69,6 +69,9 @@ float num = 0;
 
 status_context_t prev_status_context, status_context, count_context;
 
+uint16_t mem_address = 0;
+uint8_t mem_address_written = 0;
+
 machine_status_packet_t prev_statuspacket = {};
 
 machine_status_packet_t *statuspacket = (machine_status_packet_t*) status_context.mem;
@@ -191,14 +194,15 @@ void transmit_data(void){
   static uint32_t start_ms = 0;
   static unsigned long mils = 0;
 
-  #if 1
+  #if 0
 
   statuspacket->coordinate.x = num * 0.1;
   statuspacket->coordinate.y = num * 10;
   statuspacket->coordinate.z = num * -1;
 
   num = num + 0.001;
-  //Serial1.print("\033c");
+  if (num > 9999)
+    num = 0;
 
   //Serial1.println("Size for TX?\n");
   //Serial1.println(sizeof(machine_status_packet_t), DEC);
@@ -228,7 +232,6 @@ void transmit_data(void){
     //SerialHost.flush();
     ///////////////////////////////////////// Send buffer
     packetTransfer.sendData(sendSize);
-
     
     //Serial1.println("sendin\n");}
 
