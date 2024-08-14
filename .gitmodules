@@ -1,3 +1,0 @@
-[submodule "ssd1351"]
-	path = ssd1351
-	url = https://github.com/Gecko05/SSD1351-Driver-Library.git
