@@ -474,7 +474,7 @@ enum CurrentJogAxis{
 extern status_context_t status_context, count_context;
 
 extern uint16_t mem_address;
-extern uint8_t mem_address_written;
+extern uint16_t mem_address_written;
 
 extern machine_status_packet_t prev_statuspacket;
 

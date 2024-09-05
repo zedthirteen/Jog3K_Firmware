@@ -73,24 +73,25 @@ static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
         if (mem_address_written < 2 ) {
             // writes always start with the memory address
             if(mem_address_written == 0)
-                mem_address |= (uint16_t)i2c_read_byte(i2c) << 8;              
+                status_context.mem_address |= (uint16_t)i2c_read_byte(i2c) << 8;              
             else {
-                mem_address = i2c_read_byte(i2c);                
+                status_context.mem_address = i2c_read_byte(i2c);                
             }
             mem_address_written++;
         } else {
             // save into memory
-            status_context.mem[mem_address] = i2c_read_byte(i2c);
-            mem_address++;
+            status_context.mem[status_context.mem_address] = i2c_read_byte(i2c);
+            status_context.mem_address++;
+            mem_address_written++;
         }
         break;
     case I2C_SLAVE_REQUEST: // master is requesting data - comes from the count packet
         // load from memory
-        i2c_write_byte(i2c, count_context.mem[mem_address]);
-        mem_address++;
+        i2c_write_byte(i2c, count_context.mem[count_context.mem_address]);
+        count_context.mem_address++;
         break;
     case I2C_SLAVE_FINISH: // master has signalled Stop / Restart
-        mem_address_written = 0;
+            mem_address_written = 0;
         break;
     default:
         break;
@@ -119,13 +120,14 @@ uint8_t keypad_sendcount (bool clearpin) {
   command_error = 0;
 
   //make sure no transmission is active
-  while (mem_address_written != 0 && mem_address>0);
+  //while (mem_address_written != 0 && mem_address>0);
+  while (mem_address_written != 0 && status_context.mem_address>0 &&count_context.mem_address>0);
 
     //context.mem[0] = character;
-    mem_address = 0;
+    count_context.mem_address = 0;
     gpio_put(KPSTR_PIN, false);
     sleep_us(200);
-    while (mem_address == 0 && timeout){
+    while (count_context.mem_address == 0 && timeout){
       sleep_us(200);      
       timeout = timeout - 1;}
 
@@ -133,7 +135,7 @@ uint8_t keypad_sendcount (bool clearpin) {
       command_error = 1;
     //sleep_ms(2);
     if (clearpin){
-      sleep_us(100);
+      sleep_us(10);
       gpio_put(KPSTR_PIN, true);
     }
 
@@ -175,6 +177,10 @@ void i2c_task (void){
     static uint8_t countbuf[1024];
     int recSize = mem_address;
 
+    static int ms, prev_ms;
+    
+    ms = millis();
+
     bool send_data_now = false;    
     //all the task needs to do is to check the count packet and signal the host if it changes
     //may add debounce here in future?
@@ -184,9 +190,11 @@ void i2c_task (void){
     bool count_packet_changed = false;
     count_packet_changed = memcmp(count_context.mem, countbuf, recSize) != 0;
 
-    
-
     if(count_packet_changed){
+
+        if(ms < prev_ms+20)
+            return;
+#if 0
         Serial1.print("\033c");
         Serial1.println("Size");
         Serial1.println(recSize, DEC);  
@@ -208,6 +216,8 @@ void i2c_task (void){
         if (recSize % 16 != 0) {
             Serial1.println();
         }
+#endif
+        key_pressed = 1;
         keypad_sendcount(1);
         memcpy(countbuf, count_context.mem, recSize);
     }
@@ -218,7 +228,7 @@ void i2c_task (void){
 
 
     //make sure no transmission is active
-    //while ((mem_address_written > 0 ) && mem_address>0); 
+    while ((mem_address_written > 0 ) && mem_address>0); 
       
       recSize = sizeof(machine_status_packet_t);
       send_data_now = false;
@@ -304,7 +314,7 @@ void i2c_task (void){
         memcpy(strbuf, status_context.mem, recSize);            
       }
 
-
+    prev_ms = ms;
 }
 
 void init_i2c_responder (void){
