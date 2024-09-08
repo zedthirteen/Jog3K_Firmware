@@ -52,6 +52,7 @@ extern const uint8_t *flash_target_contents;
 #define FEEDLED 18
 #define FEEDLED1 19
 
+//button GPIO numbers.
 #define HALTBUTTON 13
 #define RUNBUTTON 14
 #define HOLDBUTTON 12

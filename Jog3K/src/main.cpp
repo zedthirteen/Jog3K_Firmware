@@ -51,11 +51,7 @@ void periodic_task(void)
   update_neopixels(previous_statuspacket, statuspacket);
   prev_statuspacket = *statuspacket;
 
-  countpacket->uptime = (uint32_t) (millis() / 1000);
-  //countpacket->jog_mode.value++;
-  //countpacket->feed_over = countpacket->feed_over + 10 ;
-  //countpacket->spindle_over = 3;
-}
+  countpacket->uptime = (uint32_t) (millis() / 250);
 
 void setup() {
   //Setup Serial

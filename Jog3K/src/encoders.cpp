@@ -96,8 +96,11 @@ void readEncoders(machine_status_packet_t *statuspacket, pendant_count_packet_t 
       current_jog_axis = (CurrentJogAxis)i;
 
       //adjust decimal with spindle override encoder
-      i = statuspacket->jog_mode.mode;
-      i = i + (EncCount[1]-prev_EncCount[1]);//increment the axis by the delta count
+      if (simulation_mode)
+        i = statuspacket->jog_mode.mode;
+      else 
+        i=countpacket->jog_mode.mode;
+      i = i + (EncCount[1]-prev_EncCount[1]);
 
       if (i>(JOGMODE_MAX))
         i=0;
@@ -105,9 +108,11 @@ void readEncoders(machine_status_packet_t *statuspacket, pendant_count_packet_t 
         i=(JOGMODE_MAX);
 
       countpacket->jog_mode.mode=i;
-
-      i = statuspacket->jog_mode.modifier;
-      i = i + (EncCount[2]-prev_EncCount[2]);//increment the axis by the delta count
+      if (simulation_mode)
+        i = statuspacket->jog_mode.modifier;
+      else
+        i=countpacket->jog_mode.modifier;
+      i = i + (EncCount[2]-prev_EncCount[2]);
 
       if (i>(JOGMODIFY_MAX))
         i=0;
@@ -125,7 +130,7 @@ void readEncoders(machine_status_packet_t *statuspacket, pendant_count_packet_t 
       EncCount[1] = Encoder1.getCount()/QuadEncMp[1];
       EncCount[2] = Encoder2.getCount()/QuadEncMp[2];
 
-      //adjust the RPM with the spindle encoder
+      //adjust the RPM with the main encoder
       i = countpacket->spindle_rpm;
       i = i + (EncCount[0]-prev_EncCount[0]);//increment the rpm  by the delta count
       //if(i<0)
