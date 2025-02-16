@@ -1,7 +1,7 @@
 import time
 from time import sleep
 from pySerialTransfer import pySerialTransfer as txfer
-from MachineStatusPacket import MachineStatusPacket, example_binary_data
+from MachineStatusPacket import MachineStatusPacket#, example_binary_data
 
 import array, struct
 from enum import Enum
@@ -63,7 +63,7 @@ converted = [hex(byte) for byte in packed_byte_array]
 testStruct = packed_byte_array
 string = array.array('B',testStruct)
 
-link = txfer.SerialTransfer('COM16')
+link = txfer.SerialTransfer('COM5')
 
 link.open()
 #sleep(1)
@@ -168,7 +168,8 @@ while time.time() - start_time < timeout:
         print(recSize)
         break
         
-    elif link.status <= 0:
+    #elif link.status <= 0:
+    elif link.status.value <= 0:
         if link.status == Status.CRC_ERROR:
             print('ERROR: CRC_ERROR')
         elif link.status == Status.PAYLOAD_ERROR:

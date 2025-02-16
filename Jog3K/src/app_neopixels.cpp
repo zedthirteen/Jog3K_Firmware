@@ -26,13 +26,14 @@ void init_neopixels (void){
   pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   pixels.setBrightness(NEO_BRIGHTNESS);
   
-  for (int i = 0; i < 20; i++){
+  // 20250216 DJF - use a define here instead of magic number
+  //for (int i = 0; i < 20; i++){
 
-  pixels.clear(); // Set all pixel colors to 'off'
-  pixels.setPixelColor(i,pixels.Color(run_color[0], run_color[1], run_color[2]));
-  pixels.show();   // Send the updated pixel colors to the hardware.
-  delay(10);
-
+  for (int i = 0; i < NUMLEDS; i++){
+    pixels.clear(); // Set all pixel colors to 'off'
+    pixels.setPixelColor(i,pixels.Color(run_color[0], run_color[1], run_color[2]));
+    pixels.show();   // Send the updated pixel colors to the hardware.
+    delay(10);
   }
 
   pixels.clear(); // Set all pixel colors to 'off'
@@ -71,9 +72,15 @@ void update_neopixels(machine_status_packet_t *previous_packet, machine_status_p
     rpm_color[2] = 0;    
 
   pixels.setPixelColor(FEEDLED,pixels.Color((uint8_t) feed_color[0], (uint8_t) feed_color[1], (uint8_t) feed_color[2]));
+  // 20250216 DJF only handle old LEDs if board revision is 2
+  #if BOARD_REVISION < 3
   pixels.setPixelColor(FEEDLED1,pixels.Color((uint8_t) feed_color[0], (uint8_t) feed_color[1], (uint8_t) feed_color[2]));
+  #endif
   pixels.setPixelColor(SPINLED,pixels.Color(rpm_color[0], rpm_color[1], rpm_color[2]));
+  // 20250216 DJF only handle old LEDs if board revision is 2
+  #if BOARD_REVISION < 3
   pixels.setPixelColor(SPINLED1,pixels.Color(rpm_color[0], rpm_color[1], rpm_color[2]));
+  #endif
 
   //set home LED
   if(packet->home_state.value)
@@ -176,8 +183,11 @@ void update_neopixels(machine_status_packet_t *previous_packet, machine_status_p
       pixels.setPixelColor(HOMELED,pixels.Color(255, 0, 0));
       pixels.setPixelColor(SPINLED,pixels.Color(255, 0, 0));
       pixels.setPixelColor(FEEDLED,pixels.Color(255, 0, 0));
+      // 20250216 DJF only handle old LEDs if board revision is 2
+      #if BOARD_REVISION < 3
       pixels.setPixelColor(SPINLED1,pixels.Color(255, 0, 0));
       pixels.setPixelColor(FEEDLED1,pixels.Color(255, 0, 0));      
+      #endif
     break;//close alarm state
 
     default :  //this is active when there is a non-interactive controller
@@ -200,19 +210,28 @@ void update_neopixels(machine_status_packet_t *previous_packet, machine_status_p
     //pixels.setPixelColor(HOMELED,pixels.Color(138, 43, 226));
     //pixels.setPixelColor(SPINDLELED,pixels.Color(138, 43, 226));
     pixels.setPixelColor(SYSLED,pixels.Color(138, 43, 226));
+    // 20250216 DJF - Only handle SEL LEDs if board revision is 2
+    #if BOARD_REVISION < 3
     pixels.setPixelColor(SELLED,pixels.Color(138, 43, 226));
-    pixels.setPixelColor(SEL2LED,pixels.Color(138, 43, 226));    
+    pixels.setPixelColor(SEL2LED,pixels.Color(138, 43, 226));
+    #endif
   }
 
   //set jog LED values
   if(screenmode == JOG_MODIFY){
     pixels.setPixelColor(SYSLED,pixels.Color(138, 43, 226));
+    // 20250216 DJF - Only handle old LEDs if board revision is 2
+    #if BOARD_REVISION < 3
     pixels.setPixelColor(SELLED,pixels.Color(138, 43, 226));
     pixels.setPixelColor(SEL2LED,pixels.Color(138, 43, 226));
+    #endif
   } else {
     pixels.setPixelColor(SYSLED,pixels.Color(run_color[0], run_color[1], run_color[2]));
+    // 20250216 DJF - Only handle old LEDs if board revision is 2
+    #if BOARD_REVISION < 3
     pixels.setPixelColor(SELLED,pixels.Color(0, 0, 0));
     pixels.setPixelColor(SEL2LED,pixels.Color(0, 0, 0));
+    #endif
   }
 
   if(packet->coordinate.a==0xFFFFFFFF && screenmode == JOG_MODIFY){

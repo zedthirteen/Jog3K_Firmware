@@ -12,6 +12,11 @@
 #include <Fonts/FreeSansBold18pt7b.h>
 #include <Fonts/Picopixel.h>
 
+// 20250216 DJF - add a board revision define
+// moved to platformio.ini BOARD_REVISION - set to 2 or 3
+//
+//#define BOARD_REVISION 2
+//#define BOARD_REVISION 3
 
 #define PROTOCOL_VERSION 1
 
@@ -31,26 +36,53 @@
 extern const uint8_t *flash_target_contents;
 
 //neopixel led locations
-#define SYSLED 0
-#define SELLED 1
-#define LEFTLED 2
-#define DOWNLED 3
-#define LOWERLED 4
-#define RIGHTLED 5
-#define RAISELED 6
-#define UPLED 7
-#define HOMELED 8
-#define SPINDLELED 9
-#define SEL2LED 10
-#define SPINLED 11
-#define SPINLED1 12
-#define MISTLED 13
-#define HOLDLED 14
-#define HALTLED 15
-#define RUNLED 16
-#define COOLED 17
-#define FEEDLED 18
-#define FEEDLED1 19
+// 20250214 DJF - reallocate neopixels for A3 board
+#if BOARD_REVISION < 3
+    #define SYSLED 0
+    #define SELLED 1
+    #define LEFTLED 2
+    #define DOWNLED 3
+    #define LOWERLED 4
+    #define RIGHTLED 5
+    #define RAISELED 6
+    #define UPLED 7
+    #define HOMELED 8
+    #define SPINDLELED 9
+    #define SEL2LED 10
+    #define SPINLED 11
+    #define SPINLED1 12
+    #define MISTLED 13
+    #define HOLDLED 14
+    #define HALTLED 15
+    #define RUNLED 16
+    #define COOLED 17
+    #define FEEDLED 18
+    #define FEEDLED1 19
+
+    #define NUMLEDS 20 // on A2 board
+
+#else // Board Revision is 3 (or greater)
+    #define SYSLED 0
+    #define UPLED 1
+    #define LEFTLED 2
+    #define DOWNLED 3
+    #define LOWERLED 4
+    #define RIGHTLED 5
+    #define RAISELED 6
+    #define SPINLED 7
+    #define SPINDLELED 8
+    #define MISTLED 9
+    #define FEEDHOLDLED 10
+    #define HOLDLED 10 // DJF Note - I thinkl this is the same as FEEDHOLDLED?
+    #define HALTLED 11
+    #define RUNLED 12
+    #define FLOODLED 13
+    #define COOLED 13 // DJF Note - Not sure if COOLED is the same as FLOODLED?
+    #define HOMELED 14
+    #define FEEDLED 15
+
+    #define NUMLEDS 16  // On A3 board
+#endif // BOARD_REVISION
 
 //button GPIO numbers.
 #define HALTBUTTON 13

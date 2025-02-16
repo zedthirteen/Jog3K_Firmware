@@ -52,6 +52,8 @@ void periodic_task(void)
   prev_statuspacket = *statuspacket;
 
   countpacket->uptime = (uint32_t) (millis() / 250);
+}
+
 
 void setup() {
   //Setup Serial
