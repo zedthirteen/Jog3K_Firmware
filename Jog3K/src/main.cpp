@@ -73,7 +73,7 @@ void setup() {
   Serial1.println("Jog3K serial debug");
   //Serial.println("Jog3K serial debug");
 
-    //copy data into the output buffer
+    //copy data into the output buffer - DJF Note: this is just clearing the first 45 bytes of the context memory
   for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
     count_context.mem[i] = 0;
   }
@@ -116,52 +116,58 @@ void transmit_data(void){
   
 
   //copy data into the output buffer, only send it if there is a change
-  send_data_now = memcmp(count_context.mem, prev_count_context.mem, sizeof(pendant_count_packet_t)) != 0;
-  //memcpy(prev_count_context.mem, count_context.mem, sizeof(pendant_count_packet_t));
-  memcpy(prev_count_context.mem, count_context.mem, sizeof(pendant_count_packet_t));
-  //for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
-  //  strbuf[i] = count_context.mem[i];
-  //}
+  // 20250327 - DJF Note: I don't trust this logic so will write out long hand
+                                                                                                                                                                                                                                            
+  //
+  send_data_now = memcmp(count_context.mem + sizeof(uint32_t), prev_count_context.mem + sizeof(uint32_t), sizeof(pendant_count_packet_t) -  + sizeof(uint32_t)) != 0;
+  {
+    memcpy(prev_count_context.mem, count_context.mem, sizeof(pendant_count_packet_t));
+    //for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
+    //  strbuf[i] = count_context.mem[i];
+    //}
 
-  if(Serial.availableForWrite() && (send_data_now == true)){
-    #if 0
-    //Serial1.print("\033c");
+    if(Serial.availableForWrite() && (send_data_now == true)){
+      #if 0
+      //Serial1.print("\033c");
 
-    Serial1.print("Serial.availableForWrite()   : ");
-    Serial1.println(Serial.availableForWrite(), DEC);
+      Serial1.print("Serial.availableForWrite()   : ");
+      Serial1.println(Serial.availableForWrite(), DEC);
 
-    Serial1.print("uptime   : ");
-    Serial1.println(countpacket->uptime, DEC);
+      Serial1.print("uptime   : ");
+      Serial1.println(countpacket->uptime, DEC);
 
-    Serial1.print("jog_mode   : ");
-    Serial1.println(countpacket->jog_mode.value, DEC);
+      Serial1.print("jog_mode   : ");
+      Serial1.println(countpacket->jog_mode.value, DEC);
 
-    Serial1.print("feed_over   : ");
-    Serial1.println(countpacket->feed_over, DEC);
+      Serial1.print("feed_over   : ");
+      Serial1.println(countpacket->feed_over, DEC);
 
-    Serial1.print("spindle_over: ");
-    Serial1.println(countpacket->spindle_over, DEC);
+      Serial1.print("spindle_over: ");
+      Serial1.println(countpacket->spindle_over, DEC);
 
-    Serial1.print("rapid_over: ");
-    Serial1.println(countpacket->rapid_over, DEC);
+      Serial1.print("rapid_over: ");
+      Serial1.println(countpacket->rapid_over, DEC);
 
-    Serial1.print("buttons: ");
-    Serial1.println(countpacket->buttons, DEC);
+      Serial1.print("buttons: ");
+      Serial1.println(countpacket->buttons, DEC);
 
-    Serial1.print("X Axis: ");
-    Serial1.println(countpacket->x_axis, DEC);
+      Serial1.print("X Axis: ");
+      Serial1.println(countpacket->x_axis, DEC);
 
-    Serial1.println("Size?\n");
-    Serial1.println(sizeof(pendant_count_packet_t), DEC);
-    #endif    
-    
-    uint16_t sendSize = 0;
+      Serial1.println("Size?\n");
+      Serial1.println(sizeof(pendant_count_packet_t), DEC);
+      #endif    
 
-    ///////////////////////////////////////// Stuff buffer with struct
-    packetTransfer.reset();
-    sendSize = packetTransfer.txObj(prev_count_context.mem, sendSize, sizeof(pendant_count_packet_t));
-    ///////////////////////////////////////// Send buffer
-    packetTransfer.sendData(sendSize);
+      uint16_t sendSize = 0;
+                  
+      ///////////////////////////////////////// Stuff buffer with struct
+      packetTransfer.reset();
+
+      sendSize = packetTransfer.txObj(prev_count_context.mem, sendSize, sizeof(pendant_count_packet_t));
+
+      ///////////////////////////////////////// Send buffer
+      packetTransfer.sendData(sendSize);
+    }
   }
   start_ms += interval_ms;//only update if successfully transmitted
 }

@@ -11,11 +11,20 @@
   
     // Encoders have 2 signals, which must be connected to 2 pins.
 
-  constexpr int ENCODER1_DATA_PIN = 26;
-  constexpr int ENCODER1_CLK_PIN = 25;
+// 20250605 DJF Note: My test harness had feed override and spin override wrong
+//                    Schematic has feed override on GPIO 8 & 9 and spin override on GPIO 25 & 26
+//                    I guess encoder 1 should be feed override and encoder 2 spin override
+  // constexpr int ENCODER1_DATA_PIN = 26;
+  // constexpr int ENCODER1_CLK_PIN = 25;
 
-  constexpr int ENCODER2_DATA_PIN = 9;
-  constexpr int ENCODER2_CLK_PIN = 8;
+  // constexpr int ENCODER2_DATA_PIN = 9;
+  // constexpr int ENCODER2_CLK_PIN = 8;
+
+  constexpr int ENCODER1_DATA_PIN = 9;
+  constexpr int ENCODER1_CLK_PIN = 8;
+
+  constexpr int ENCODER2_DATA_PIN = 26;
+  constexpr int ENCODER2_CLK_PIN = 25;
 
     //Sanguino	        2, 10, 11	                  0
 
