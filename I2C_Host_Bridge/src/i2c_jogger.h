@@ -203,6 +203,13 @@ enum machine_state_t {
     MachineState_Other = 254
 };
 
+// 20250309 DJF add enums for debug type
+enum debug_type
+{
+    HostToPendant_Packet,
+    PendantToHost_Packet
+};
+
 //static_assert(sizeof(msg_type_t) == 1, "msg_type_t too large for I2C display interface");
 //static_assert(sizeof(machine_state_t) == 1, "machine_state_t too large for I2C display interface");
 //static_assert(sizeof(coord_system_id_t) == 1, "coord_system_id_t too large for I2C display interface");
@@ -401,6 +408,8 @@ typedef enum {
 } status_code_t;
 
 typedef struct __attribute__((packed)) {
+    // 20250323 DJF Note: can't keep address in this packet as Jog3k can't handle it when forwarded
+    //
     //uint16_t address;  //address is only used for I2C transactions, only present in GRBLHAL plugin
     machine_state_t machine_state;
     uint8_t machine_substate;
@@ -428,25 +437,32 @@ typedef struct __attribute__((packed)) {
 #define MAXVAL 9999.99
 
 typedef struct __attribute__((packed)) {
-int32_t uptime;
-jog_mode_t jog_mode;
-int32_t feed_over;
-int32_t spindle_over;
-int32_t rapid_over;
-uint32_t buttons;
-float feedrate; 
-float spindle_rpm; 
-float x_axis;
-float y_axis;
-float z_axis;
-float a_axis;
+    int32_t uptime;
+    jog_mode_t jog_mode;
+    int32_t feed_over;
+    int32_t spindle_over;
+    int32_t rapid_over;
+    uint32_t buttons;
+    float feedrate; 
+    float spindle_rpm; 
+    float x_axis;
+    float y_axis;
+    float z_axis;
+    float a_axis;
 } pendant_count_packet_t;
 
+#define BYTEWIDE_I2C_ADDRESS  // 20250414 DJF Note: use this while testing 8bit/16bit memory address in machine status packet
+                              //                    Comment out define for 16 bit
 typedef struct
 {
     uint8_t mem[1024];
     uint16_t mem_address;
+    // 20250318 DJF - this needs to go back to bool as can't get it to work at uint16_t
+#ifdef BYTEWIDE_I2C_ADDRESS
+    bool mem_address_written;   
+#else
     uint8_t mem_address_written;
+#endif
 } status_context_t;
 
 enum ScreenMode{

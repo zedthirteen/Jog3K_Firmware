@@ -69,32 +69,52 @@ int command_error = 0;
 static void i2c_slave_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
 
     switch (event) {
-    case I2C_SLAVE_RECEIVE: // master has written some data - goes to the outgoing status packet
-        if (mem_address_written < 2 ) {
-            // writes always start with the memory address
-            if(mem_address_written == 0)
-                status_context.mem_address |= (uint16_t)i2c_read_byte(i2c) << 8;              
-            else {
-                status_context.mem_address = i2c_read_byte(i2c);                
+        // 20250323 DJF - set this back to 256 byte and single byte address offset
+        //                I just could not get the 2 byte address working
+        //                2 bytes would exceed the maximum size of PacketTransfer so would need to split and ID packets
+        //
+        case I2C_SLAVE_RECEIVE: // master has written some data - goes to the outgoing status packet
+#ifdef BYTEWIDE_I2C_ADDRESS // DJF Note: change in i2cjogger.h
+            if(!status_context.mem_address_written)
+            {
+                // writes always start with the memory address
+                //status_context.mem_address = i2c_read_byte(i2c) +1; // djf testing - data is  byte out!
+                status_context.mem_address = i2c_read_byte(i2c);
+                status_context.mem_address_written = true;
             }
-            mem_address_written++;
-        } else {
-            // save into memory
-            status_context.mem[status_context.mem_address] = i2c_read_byte(i2c);
-            status_context.mem_address++;
-            mem_address_written++;
-        }
-        break;
-    case I2C_SLAVE_REQUEST: // master is requesting data - comes from the count packet
-        // load from memory
-        i2c_write_byte(i2c, count_context.mem[count_context.mem_address]);
-        count_context.mem_address++;
-        break;
-    case I2C_SLAVE_FINISH: // master has signalled Stop / Restart
-            mem_address_written = 0;
-        break;
-    default:
-        break;
+            else
+            {
+                // save to memory
+                status_context.mem[status_context.mem_address++] = i2c_read_byte(i2c);
+                //status_context.mem_address++;
+            }
+#else // 2 byte address
+            if (mem_address_written < 2 ) {
+                // writes always start with the memory address
+                if(mem_address_written == 0)
+                    status_context.mem_address |= (uint16_t)i2c_read_byte(i2c) << 8;              
+                else {
+                    status_context.mem_address = i2c_read_byte(i2c);                
+                }
+                mem_address_written++;
+            } else {
+                // save into memory
+                status_context.mem[status_context.mem_address] = i2c_read_byte(i2c);
+                status_context.mem_address++;
+                mem_address_written++;
+            }
+#endif
+            break;
+        case I2C_SLAVE_REQUEST: // master is requesting data - comes from the count packet
+            // load from memory
+            i2c_write_byte(i2c, count_context.mem[count_context.mem_address]);
+            count_context.mem_address++;
+            break;
+        case I2C_SLAVE_FINISH: // master has signalled Stop / Restart
+                status_context.mem_address_written = false;
+            break;
+        default:
+            break;
     }
 }
 
@@ -121,7 +141,12 @@ uint8_t keypad_sendcount (bool clearpin) {
 
   //make sure no transmission is active
   //while (mem_address_written != 0 && mem_address>0);
-  while (mem_address_written != 0 && status_context.mem_address>0 &&count_context.mem_address>0);
+
+    // 20250318 DJF - change mem_address_written back to bool
+    // 20250323 DJF Note: This while is single line loop - so will block
+    //
+    //while (mem_address_written != 0 && status_context.mem_address>0 &&count_context.mem_address>0);
+    while (status_context.mem_address_written && status_context.mem_address > 0 && count_context.mem_address > 0);
 
     //context.mem[0] = character;
     count_context.mem_address = 0;
@@ -228,7 +253,15 @@ void i2c_task (void){
 
 
     //make sure no transmission is active
-    while ((mem_address_written > 0 ) && mem_address>0); 
+
+    // 20250318 DJF - change mem_address_written back to bool status_context.mem_address_written
+    // DJF Note: this is a loop doing nothing while loop
+    //
+
+    //  mem_address_written greater than 0 means it hasn't finished
+    //
+    //while ((mem_address_written > 0 ) && mem_address>0); 
+    while ((status_context.mem_address_written) && (status_context.mem_address != sizeof(machine_status_packet_t))); 
       
       recSize = sizeof(machine_status_packet_t);
       send_data_now = false;
