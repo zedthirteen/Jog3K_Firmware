@@ -69,7 +69,7 @@ SerialTransfer packetTransfer;
 
 float num = 0;
 
-status_context_t prev_status_context, status_context, count_context;
+status_context_t prev_status_context, status_context, prev_count_context, count_context;
 
 uint16_t mem_address = 0;
 uint16_t mem_address_written = 0;
@@ -151,10 +151,11 @@ void tuh_cdc_umount_cb(uint8_t idx) {
 
 }
 
-// forward Seral <-> SerialHost
+// forward Serial <-> SerialHost
 void forward_serial(void) {
   uint8_t buf[64];
 
+  // 20250329 DJF - not sure what this is doing?
   // SerialHost -> Serial
   if (SerialHost.connected() && SerialHost.available()) {
     size_t count = SerialHost.read(buf, sizeof(buf));
@@ -163,6 +164,180 @@ void forward_serial(void) {
   }
 }
 
+// 20250315 DJF common function to debug machine status packet or pendant count packet
+#if defined(DBG_HOST_PKT) || defined(DBG_PENDANT_PKT)
+void debugPacket(debug_type debugType, byte* data, int start, int end, bool clear)
+{
+    machine_status_packet_t debug_ms_packet;
+    machine_status_packet_t *debug_ms_pkt_ptr = &debug_ms_packet;
+
+    pendant_count_packet_t debug_pc_packet;
+    pendant_count_packet_t *debug_pc_pkt_ptr = &debug_pc_packet;
+
+    if(clear)
+    {
+        Serial1.print("\033c");
+    }
+    switch(debugType)
+    {
+        case PendantToHost_Packet:
+        {
+            Serial1.printf("\npendant_count_packet_t decode - start: 0x%02X, end: 0x%02X", start, end);
+            Serial1.println();
+            memcpy(debug_pc_pkt_ptr, &data[start], end - start);
+            Serial1.printf("up-time          : 0x%08X", debug_pc_packet.uptime);
+            Serial1.println();
+            Serial1.printf("jog  mode        : 0x%02X", debug_pc_packet.jog_mode);
+            Serial1.println();
+            Serial1.printf("feed override    : %d", debug_pc_packet.feed_over);
+            Serial1.println();
+            Serial1.printf("spindle override : %d", debug_pc_packet.spindle_over);
+            Serial1.println();
+            Serial1.printf("rapid override   : %d", debug_pc_packet.rapid_over);
+            Serial1.println();
+            Serial1.printf("buttons          : 0x%08X", debug_pc_packet.buttons);
+            Serial1.println();
+            Serial1.printf("feed rate        : %d", debug_pc_packet.feedrate);
+            Serial1.println();
+            Serial1.printf("spindle rpm      : %d", debug_pc_packet.spindle_rpm);
+            Serial1.println();
+            Serial1.printf("coordinates      : x: %.3f", debug_pc_packet.x_axis);
+            Serial1.println();
+            Serial1.printf("                 : y: %.3f", debug_pc_packet.y_axis);
+            Serial1.println();
+            Serial1.printf("                 : z: %.3f", debug_pc_packet.z_axis);
+            Serial1.println();
+            Serial1.printf("                 : a: %.3f", debug_pc_packet.a_axis);
+            Serial1.println();
+            break;
+        }
+        case HostToPendant_Packet:
+        {
+            Serial1.printf("\nmachine_status_packet_t decode - start: 0x%02X, end: 0x%02X", start, end);
+            Serial1.println();
+            memcpy(debug_ms_pkt_ptr, &data[start], end - start);
+
+            // try to output elements from debug_ms_packet
+            //Serial1.printf("I2C address 0x%02X", debug_ms_packet.address);
+            //Serial1.println();
+            Serial1.printf("machine_state    : %d", debug_ms_packet.machine_state);
+            Serial1.println();
+            Serial1.printf("machine_substate : %d", debug_ms_packet.machine_substate);
+            Serial1.println();
+            Serial1.printf("home_state       : %d", debug_ms_packet.home_state.value);
+            Serial1.println();
+            Serial1.printf("feed_override    : %d", debug_ms_packet.feed_override);
+            Serial1.println();
+            Serial1.printf("spindle_override : %d", debug_ms_packet.spindle_override);
+            Serial1.println();
+            Serial1.printf("spindle_stop     : %d", debug_ms_packet.spindle_stop);
+            Serial1.println();
+            Serial1.printf("spindle_state    : %d", debug_ms_packet.spindle_state.value);
+            Serial1.println();
+            Serial1.printf("spindle_rpm      : %d", debug_ms_packet.spindle_rpm);
+            Serial1.println();
+            Serial1.printf("feed_rate        : %.3f", debug_ms_packet.feed_rate);
+            Serial1.println();
+            Serial1.printf("coolant_state    : 0x%02X", debug_ms_packet.coolant_state.value);
+            Serial1.println();
+            Serial1.printf("jog_mode:mode    : 0x%02X", debug_ms_packet.jog_mode.mode);
+            Serial1.println();
+            Serial1.printf("jog_mode:modifier: 0x%02X", debug_ms_packet.jog_mode.modifier);
+            Serial1.println();
+            Serial1.printf("signals          : 0x%02X", debug_ms_packet.signals.value);
+            Serial1.println();
+            Serial1.printf("jog_stepsize     : %.3f", debug_ms_packet.jog_stepsize);
+            Serial1.println();
+            Serial1.printf("current_wcs      : %d", (int)debug_ms_packet.current_wcs);
+            Serial1.println();
+            Serial1.printf("limits           : 0x%02X", debug_ms_packet.limits.value);
+            Serial1.println();
+            Serial1.printf("status_code      : 0x%02X", (int)debug_ms_packet.status_code);
+            Serial1.println();
+            Serial1.printf("machine_modes    : 0x%02X", debug_ms_packet.machine_modes.value);
+            Serial1.println();
+
+            Serial1.printf("coordinates      : x: %.3f"/*, y: %.3f, z: %.3f"*/, 
+                              debug_ms_packet.coordinate.x /*, 
+                              debug_ms_packet.coordinate.y, 
+                              debug_ms_packet.coordinate.z*/);
+            Serial1.println();
+            Serial1.printf("                   y: %.3f", debug_ms_packet.coordinate.y);
+            Serial1.println();
+            Serial1.printf("                   z: %.3f", debug_ms_packet.coordinate.z);
+            Serial1.println();
+            Serial1.printf("msgtype          : %d", (int)debug_ms_packet.msgtype);
+            Serial1.println();
+            break;
+        }
+        default:
+        {
+            Serial1.print("\n****Unknown debugType: ");
+            Serial1.println(debugType);
+            break;
+        }
+    }
+}
+
+// 20250309 DJF Use common serial debug routine for packet data
+void serialDebugPacket(debug_type debugType, byte* data, int start, int end, bool clear)
+{
+    if(clear)
+    {
+        Serial1.print("\033c");
+    }
+
+    switch(debugType)
+    {
+
+        case PendantToHost_Packet:
+        {
+            Serial1.print("\npendant_count_packet_t ");
+            break;
+        }
+        case HostToPendant_Packet:
+        {
+            Serial1.print("\nmachine_status_packet_t ");
+            break;
+        }
+        default:
+        {
+            Serial1.print("\n****Unknown debugType: ");
+            Serial1.println(debugType);
+            break;
+        }
+    }
+    //Serial1.println("pendant_count_packet_t_size\n");
+    //Serial1.println(sizeof(pendant_count_packet_t), DEC);
+
+    //Serial1.println("receive data");
+    //Serial1.println(recSize, DEC);
+    Serial1.print(end-start, DEC);
+    Serial1.println(" bytes");
+
+    for (byte i = start; i < end; i++) 
+    {
+        // Print each byte as a two-digit hexadecimal number
+        if (data[i] < 16) 
+        {
+            Serial1.print("0"); // Print leading zero for single digit numbers
+        }
+        Serial1.print(data[i], HEX); // Print byte in hexadecimal format
+        Serial1.print(" "); // Print space between bytes
+        
+        // Insert a line break after every 16 bytes for readability
+        if ((i + 1) % 16 == 0) 
+        {
+            Serial1.println();
+        }
+    }
+    // Print a final line break if necessary
+    if ((end -start) % 16 != 0) 
+    {
+        Serial1.println();
+    }
+}
+#endif // DBG_HOST_PKT || DBG_PENDANT_PKT
 //--------------------------------------------------------------------+
 // setup() & loop()
 //--------------------------------------------------------------------+
@@ -180,6 +355,10 @@ void setup() {
   USBHost.begin(0);
   SerialHost.begin(0,0);
   //packetTransfer.begin(SerialHost);
+  /* 
+   * DJF Note: just so I know the params:
+   * SerialTransfer.begin(Stream& _port, const bool _debug, Stream& _debugPort, uint32_t _timout)
+   */
   packetTransfer.begin(SerialHost,true, Serial1, 50);
   simulation_mode = 0;
 
@@ -231,33 +410,43 @@ void transmit_data(void){
     Serial1.flush();
     packetTransfer.reset();
     
-    #if 0
-    Serial1.print("\033c");
+ //#if 0
 
-    Serial1.println("machine_status_packet_t\n");
-    Serial1.println(sizeof(machine_status_packet_t), DEC);
+// 20250309 DJF Use common serial debug routine for packet data
+#if DBG_HOST_PKT
+        Serial1.printf("mem_address: %d\n", status_context.mem_address);
+#if DBG_DECODE_PKT_PARAMS
+        debugPacket(HostToPendant_Packet, prev_status_context.mem, 0, sendSize, false);
+#endif
+        serialDebugPacket(HostToPendant_Packet, prev_status_context.mem, 0, sendSize, false); // hex dump
+/*
+        Serial1.print("\033c");
 
-    Serial1.println("send data");
-    Serial1.println(sendSize, DEC);
+        Serial1.println("machine_status_packet_t\n");
+        Serial1.println(sizeof(machine_status_packet_t), DEC);
 
-    for (size_t i = 0; i < sendSize; i++) {
-      // Print each byte as a two-digit hexadecimal number
+        Serial1.println("send data");
+        Serial1.println(sendSize, DEC);
+
+        for (size_t i = 0; i < sendSize; i++) {
+            // Print each byte as a two-digit hexadecimal number
       if (prev_status_context.mem[i] < 16) {
-        Serial1.print("0"); // Print leading zero for single digit numbers
-      }
-      Serial1.print(prev_status_context.mem[i], HEX); // Print byte in hexadecimal format
-      Serial1.print(" "); // Print space between bytes
-      
-      // Insert a line break after every 16 bytes for readability
+                Serial1.print("0"); // Print leading zero for single digit numbers
+            }
+            Serial1.print(prev_status_context.mem[i], HEX); // Print byte in hexadecimal format
+            Serial1.print(" "); // Print space between bytes
+            
+            // Insert a line break after every 16 bytes for readability
       if ((i + 1) % 16 == 0) {
-        Serial1.println();
-      }
-    }
+                Serial1.println();
+            }
+        }
     // Print a final line break if necessary
     if (sendSize % 16 != 0) {
       Serial1.println();
     }
-    #endif
+*/
+#endif
 
   }
   gpio_put(REDLED, 0);
@@ -278,39 +467,47 @@ void receive_data(void){
       // use this variable to keep track of how many
       // bytes we've processed from the receive buffer
       uint16_t recSize = 0;
+          
+          //Serial1.println("receive data\n");
+          //Serial1.println(sizeof(machine_status_packet_t), DEC);
 
-      //Serial1.println("receive data\n");
-      //Serial1.println(sizeof(machine_status_packet_t), DEC);
+          recSize = packetTransfer.rxObj(strbuf, recSize );
 
-      recSize = packetTransfer.rxObj(strbuf, recSize );
+          // 20250309 DJF Use common serial debug routine for packet data
+//          #if 0
+#if DBG_PENDANT_PKT
+/* 
+          Serial1.print("\033c");
 
-      #if 0
-      Serial1.print("\033c");
+          Serial1.println("pendant_count_packet_t_size\n");
+          Serial1.println(sizeof(pendant_count_packet_t), DEC);
 
-      Serial1.println("pendant_count_packet_t_size\n");
-      Serial1.println(sizeof(pendant_count_packet_t), DEC);
-
-      Serial1.println("receive data");
-      Serial1.println(recSize, DEC);
+          Serial1.println("receive data");
+          Serial1.println(recSize, DEC);
 
       for (size_t i = 0; i < recSize; i++) {
-        // Print each byte as a two-digit hexadecimal number
+              // Print each byte as a two-digit hexadecimal number
         if (strbuf[i] < 16) {
-          Serial1.print("0"); // Print leading zero for single digit numbers
-        }
-        Serial1.print(strbuf[i], HEX); // Print byte in hexadecimal format
-        Serial1.print(" "); // Print space between bytes
-        
-        // Insert a line break after every 16 bytes for readability
+                  Serial1.print("0"); // Print leading zero for single digit numbers
+              }
+              Serial1.print(strbuf[i], HEX); // Print byte in hexadecimal format
+              Serial1.print(" "); // Print space between bytes
+              
+              // Insert a line break after every 16 bytes for readability
         if ((i + 1) % 16 == 0) {
-          Serial1.println();
-        }
-      }
-      // Print a final line break if necessary
+                  Serial1.println();
+              }
+          }
+          // Print a final line break if necessary
       if (recSize % 16 != 0) {
-        Serial1.println();
-      }
-      #endif
+              Serial1.println();
+          } 
+*/
+#if DBG_DECODE_PKT_PARAMS
+          debugPacket(PendantToHost_Packet, strbuf, 0, recSize, true);
+#endif
+          serialDebugPacket(PendantToHost_Packet, strbuf, 0, recSize, false); // hex dump
+#endif
 
       //copy data into the count packet
       for (size_t i = 0; i < sizeof(pendant_count_packet_t); i++) {
